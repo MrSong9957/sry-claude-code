@@ -16,7 +16,6 @@ sry-skills是一个基于个人收集的技能（Skill）仓库，包含了多�
 
 ## 项目结构
 
-```
 sry-skills/
 ├── [brainstorming](#brainstorming)/              # 头脑风暴
 ├── [code-simplifier](#code-simplifier)/            # 代码简化器
@@ -40,7 +39,6 @@ sry-skills/
 ├── [web-artifacts-builder](#web-artifacts-builder)/      # Web制品构建器
 ├── [writing-plans](#writing-plans)/              # 编写计划
 └── [writing-skills](#writing-skills)/             # 编写技能
-```
 
 ## 技能列表
 
