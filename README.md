@@ -16,29 +16,28 @@ sry-skills是一个基于个人收集的技能（Skill）仓库，包含了多�
 
 ## 项目结构
 
-sry-skills/
-├── [brainstorming](#brainstorming)/              # 头脑风暴
-├── [code-simplifier](#code-simplifier)/            # 代码简化器
-├── [dispatching-parallel-agents](#dispatching-parallel-agents)/ # 并行代理调度
-├── [error-fix](#error-fix)/                  # 错误修复专家
-├── [error-notebook](#error-notebook)/             # 错误笔记本
-├── [executing-plans](#executing-plans)/            # 执行计划
-├── [finishing-a-development-branch](#finishing-a-development-branch)/ # 完成开发分支
-├── [frontend-design](#frontend-design)/            # 前端设计专家
-├── [json-canvas](#json-canvas)/                # JSON Canvas编辑器
-├── [receiving-code-review](#receiving-code-review)/      # 接收代码审查
-├── [requesting-code-review](#requesting-code-review)/     # 请求代码审查
-├── [subagent-driven-development](#subagent-driven-development)/ # 子代理驱动开发
-├── [superpowers](#superpowers)/                # 超能力系统
-├── [systematic-debugging](#systematic-debugging)/       # 系统性调试
-├── [test-driven-development](#test-driven-development)/    # 测试驱动开发
-├── [ui-ux-pro-max](#ui-ux-pro-max)/              # UI/UX设计智能助手
-├── [using-git-worktrees](#using-git-worktrees)/        # 使用Git工作树
-├── [using-superpowers](#using-superpowers)/          # 使用超能力
-├── [verification-before-completion](#verification-before-completion)/ # 完成前验证
-├── [web-artifacts-builder](#web-artifacts-builder)/      # Web制品构建器
-├── [writing-plans](#writing-plans)/              # 编写计划
-└── [writing-skills](#writing-skills)/             # 编写技能
+- [brainstorming](#brainstorming) - 头脑风暴
+- [code-simplifier](#code-simplifier) - 代码简化器
+- [dispatching-parallel-agents](#dispatching-parallel-agents) - 并行代理调度
+- [error-fix](#error-fix) - 错误修复专家
+- [error-notebook](#error-notebook) - 错误笔记本
+- [executing-plans](#executing-plans) - 执行计划
+- [finishing-a-development-branch](#finishing-a-development-branch) - 完成开发分支
+- [frontend-design](#frontend-design) - 前端设计专家
+- [json-canvas](#json-canvas) - JSON Canvas编辑器
+- [receiving-code-review](#receiving-code-review) - 接收代码审查
+- [requesting-code-review](#requesting-code-review) - 请求代码审查
+- [subagent-driven-development](#subagent-driven-development) - 子代理驱动开发
+- [superpowers](#superpowers) - 超能力系统
+- [systematic-debugging](#systematic-debugging) - 系统性调试
+- [test-driven-development](#test-driven-development) - 测试驱动开发
+- [ui-ux-pro-max](#ui-ux-pro-max) - UI/UX设计智能助手
+- [using-git-worktrees](#using-git-worktrees) - 使用Git工作树
+- [using-superpowers](#using-superpowers) - 使用超能力
+- [verification-before-completion](#verification-before-completion) - 完成前验证
+- [web-artifacts-builder](#web-artifacts-builder) - Web制品构建器
+- [writing-plans](#writing-plans) - 编写计划
+- [writing-skills](#writing-skills) - 编写技能
 
 ## 技能列表
 
