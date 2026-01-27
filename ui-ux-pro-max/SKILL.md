@@ -1,6 +1,6 @@
 ---
 name: ui-ux-pro-max
-description: "UI/UX design intelligence. 50 styles, 21 palettes, 50 font pairings, 20 charts, 9 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui). Actions: plan, build, create, design, implement, review, fix, improve, optimize, enhance, refactor, check UI/UX code. Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, mobile app, .html, .tsx, .vue, .svelte. Elements: button, modal, navbar, sidebar, card, table, form, chart. Styles: glassmorphism, claymorphism, minimalism, brutalism, neumorphism, bento grid, dark mode, responsive, skeuomorphism, flat design. Topics: color palette, accessibility, animation, layout, typography, font pairing, spacing, hover, shadow, gradient."
+description: 内置 50 种设计风格、21 套配色方案、50 组字体搭配、20 类图表、9 大技术栈（React、Next.js、Vue、Svelte、SwiftUI、React Native、Flutter、Tailwind、shadcn/ui）。支持动作：规划、构建、创作、设计、落地、评审、修复、改进、优化、增强、重构、UI/UX 代码检查。适用项目：网站、着陆页、数据看板、管理后台、电商平台、软件即服务应用、作品集、博客、移动应用，兼容 .html、.tsx、.vue、.svelte 文件格式。覆盖组件：按钮、弹窗、导航栏、侧边栏、卡片、表格、表单、图表。设计风格：玻璃拟态、黏土拟态、极简风、粗野主义、新拟态、便当式网格布局、暗黑模式、响应式设计、拟物化设计、扁平化设计。核心议题：配色方案、无障碍设计、动画效果、版面布局、字体设计、字体搭配、间距规范、悬浮交互、阴影效果、渐变设计。
 ---
 
 # UI/UX Pro Max - Design Intelligence
