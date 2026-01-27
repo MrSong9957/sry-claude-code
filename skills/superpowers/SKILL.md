@@ -67,10 +67,10 @@ superpowers 仅可读取以下目录，并可按需选择其中的所有内容�
   - svelte-todo/: Svelte Todo 示例
 
 # 必用技能
-- **using-superpowers**（.trae/skills/using-superpowers）
-- **brainstorming**（.trae/skills/brainstorming）
-- **writing-plans**（.trae/skills/writing-plans）
-- **executing-plans**（.trae/skills/executing-plans）
+- **using-superpowers**（skills/using-superpowers）
+- **brainstorming**（skills/brainstorming）
+- **writing-plans**（skills/writing-plans）
+- **executing-plans**（skills/executing-plans）
 
 # 执行流程（TRAE必须严格遵守）
 
