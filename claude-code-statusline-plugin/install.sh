@@ -50,7 +50,7 @@ install_files() {
     info "复制插件文件..."
 
     # 复制脚本
-    cp "$(dirname "$0")/show-prompt.py" "$STATUSLINE_DIR/"
+    cp "$(dirname "$0")/statusline/show-prompt.py" "$STATUSLINE_DIR/"
     chmod +x "$STATUSLINE_DIR/show-prompt.py"
 
     # 创建 plugin.json
