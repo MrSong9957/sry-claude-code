@@ -1,0 +1,6 @@
+# Environment variables
+.env
+
+# Docker volumes
+workspace/
+dev-home/

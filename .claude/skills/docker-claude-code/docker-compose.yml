@@ -1,0 +1,23 @@
+services:
+  app:
+    build: .
+    container_name: docker-claude-code-app
+    ports:
+      - "8080:8000"  # Optional: for any web services
+    environment:
+      - ENV=development
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-http://host.docker.internal:15721}
+    volumes:
+      # Project files (read-only to prevent hot-reload issues)
+      - .:/app:ro
+      # Development workspace (read-write)
+      - ${WORKSPACE_PATH:-./workspace}:/workspace
+      # Claude home directory (persistent config)
+      - ${DEV_HOME_PATH:-./dev-home/claude}:/home/claude
+      # Claude config directory
+      - ${CLAUDE_CONFIG_PATH:-./dev-home/config}:/home/claude/.config/claude
+    working_dir: /workspace
+    stdin_open: true  # docker run -i
+    tty: true         # docker run -t
+    restart: unless-stopped
