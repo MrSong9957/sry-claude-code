@@ -151,6 +151,7 @@ chmod +x install.sh && ./install.sh
 
 | 技能 | 描述 |
 |------|------|
+| `docker-claude-code` | 为 Claude Code CLI 创建隔离、持久的 Docker 环境（多用户支持、API 代理配置） |
 | `docker-dev-home-claude-code` | Docker 开发环境配置和管理 |
 
 ## 🤖 智能代理
@@ -259,8 +260,8 @@ chmod +x install.sh && ./install.sh
 ### 方法 1: 克隆仓库
 
 ```bash
-git clone https://github.com/your-username/sry-skills.git
-cd sry-skills
+git clone https://github.com/MrSong9957/sry-claude-code.git
+cd sry-claude-code
 ```
 
 ### 方法 2: 复制到现有项目
@@ -268,7 +269,7 @@ cd sry-skills
 将 `.claude` 目录复制到你的项目根目录：
 
 ```bash
-cp -r /path/to/sry-skills/.claude /path/to/your/project/
+cp -r /path/to/sry-claude-code/.claude /path/to/your/project/
 ```
 
 ## 📖 使用方法
