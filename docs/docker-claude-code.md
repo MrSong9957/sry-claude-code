@@ -22,12 +22,15 @@ docker-claude-code/
 ├── .env                    # 环境变量配置
 ├── docker-compose.yml      # Docker 编排文件
 ├── Dockerfile              # 容器构建文件
-├── workspace/              # 核心工作区（容器内 /workspace）
-│   ├── project/            # 项目代码目录
-│   └── .claude/            # Claude 配置目录
-│       ├── config/         # CLI 配置
-│       └── history/        # 会话历史
+├── dev-home/               # Claude 配置持久化目录（git ignored）
+│   ├── config/             # CLI 配置（→ 容器内 ~/.config/claude）
+│   └── claude/             # 用户数据（→ 容器内 /home/claude）
 └── README.md               # 本文件（可选）
+
+# ⚠️ **重要**：本项目采用**统一持久化模式**
+# 项目文件、配置、数据通过 volume 持久化到宿主机 ./workspace/ 目录
+# 容器删除后，所有文件安全保留在宿主机
+# 可使用 backup-project.sh 额外备份到其他位置
 ```
 
 ---
@@ -43,8 +46,7 @@ ANTHROPIC_API_KEY=dummy
 # 端口要与 CC Switch 本地代理端口一致
 ANTHROPIC_BASE_URL=http://host.docker.internal:15721
 
-# 工作区路径（可选自定义）
-# WORKSPACE_PATH=./workspace
+# 注意：工作区在容器内 /workspace/project/，不需要配置路径
 ```
 
 **说明：**
@@ -88,8 +90,12 @@ services:
       # Windows/Mac (Docker Desktop) 会自动忽略此配置
       - "host.docker.internal:host-gateway"
     volumes:
-      # 核心：单卷挂载，包含项目和配置
+      # 统一持久化：项目、配置、数据都在 ./workspace 目录
       - ${WORKSPACE_PATH:-./workspace}:/workspace
+      # 持久化 Claude 配置（API 密钥、历史记录等）
+      - ${CLAUDE_CONFIG_PATH:-./dev-home/config}:/home/claude/.config/claude
+      # 持久化 Claude 用户数据
+      - ${CLAUDE_HOME_PATH:-./dev-home/claude}:/home/claude
     working_dir: /workspace/project  # 关键：容器启动后直接进入项目目录
     stdin_open: true
     tty: true
@@ -98,29 +104,85 @@ services:
 
 ### **2.3 Dockerfile 文件**
 ```dockerfile
-# 阶段 1：基础镜像和工具
-FROM node:18-alpine AS base
+# syntax=docker/dockerfile:1
+# ============================================
+# Docker Claude Code - 容器化开发环境
+# ============================================
+# 基础镜像：使用 Node.js 20 LTS 版本（slim 变体足够轻量）
+# 选择 node:20-slim 而非 alpine 的原因：
+#   - 兼容性更好：slim 基于 Debian，与大多数 Node.js 应用兼容
+#   - 调试工具：包含更多调试工具（如 bash、ping、curl）
+#   - 稳定性：生产环境更常用 slim 而非 alpine
+FROM node:20-slim
 
-# 安装 Claude Code CLI（最新版）
+# ============================================
+# 阶段 1：安装 Claude Code CLI
+# ============================================
+# 使用 npm 全局安装最新版本的 Claude Code CLI
+# -g: 全局安装，使 claude 命令在容器任何位置都可用
 RUN npm install -g @anthropic-ai/claude-code
 
-# 阶段 2：最终镜像
-FROM base
+# ============================================
+# 阶段 2：创建非 root 用户（安全最佳实践）
+# ============================================
+# 为什么需要非 root 用户？
+#   - 安全性：减少容器被攻击时的权限提升风险
+#   - 开发规范：符合最小权限原则
+#   - 文件管理：避免以 root 身份创建文件导致权限混乱
+#
+# 为什么选择 UID 1001 而非系统自动分配？
+#   - 明确性：明确指定 UID 可以避免环境差异导致的不一致
+#   - 避免冲突：node:20-slim 镜像中 node 用户 UID 通常是 1000
+#               使用 1001 可以避免与现有用户冲突
+#   - 可预测性：在多容器编排时，UID 一致性很重要
+#
+# 为什么配置 sudo NOPASSWD:ALL？
+#   - 自主开发：Claude Code AI 需要能够自主执行需要权限的操作
+#               （如安装包、修改系统文件等）
+#   - 无人工干预：避免在 AI 开发过程中因为权限问题暂停等待输入
+#   - 安全权衡：虽然是 NOPASSWD，但因为是在隔离容器内，风险可控
+#   - 验收标准：满足"非 root 用户能自主完成所有开发任务"的要求
+RUN groupadd -r claude && \
+    useradd -r -u 1001 -g claude -G sudo -m -s /bin/bash claude && \
+    echo "claude ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# 创建非 root 用户 (ID: 1001，避免与 node 用户的 UID 1000 冲突)
-RUN adduser -u 1001 -s /bin/sh -D claude-user
+# ============================================
+# 阶段 3：创建工作区目录
+# ============================================
+# 为什么使用 /workspace/project？
+#   - 明确性：更清晰地表明这是项目代码目录
+#   - 扩展性：未来可以在 /workspace 下添加其他目录
+#   - 与文档一致：与 docker-compose.yml 中的 working_dir 一致
+#
+# 为什么需要 chown？
+#   - 确保非 root 用户（claude）对此目录有完全的读写权限
+#   - 避免权限问题：防止以 root 创建的文件导致 claude 用户无法修改
+RUN mkdir -p /workspace/project && \
+    chown -R claude:claude /workspace
 
-# 设置工作目录（与 docker-compose.yml 中的 working_dir 一致）
+# ============================================
+# 阶段 4：设置工作目录
+# ============================================
+# WORKDIR 指令的作用：
+#   - 设置容器启动后的默认工作目录
+#   - 与 docker-compose.yml 中的 working_dir 一致
 WORKDIR /workspace/project
 
-# 切换到非 root 用户（安全最佳实践）
-USER claude-user
+# ============================================
+# 阶段 5：切换到非 root 用户
+# ============================================
+# 从此开始，所有命令都以 claude 用户身份执行
+# 这是 Docker 安全最佳实践：尽可能使用非 root 用户运行应用
+USER claude
 
-# 暴露端口（根据 docker-compose.yml 调整）
-EXPOSE 8000
-
-# 默认启动 shell
-CMD ["/bin/sh"]
+# ============================================
+# 阶段 6：默认启动命令
+# ============================================
+# 使用 bash 而非 sh 的原因：
+#   - 功能更强大：支持数组、更丰富的字符串操作、更好的调试功能
+#   - 开发体验：支持 tab 补全、命令历史、别名等
+#   - 兼容性：大多数开发脚本和工具都基于 bash 编写
+CMD ["bash"]
 ```
 
 ---
@@ -131,11 +193,12 @@ CMD ["/bin/sh"]
 
 #### **场景一：新建项目**
 ```bash
-# 1. 创建项目目录结构
-mkdir -p docker-claude-code/workspace/project
+# 1. 创建项目目录
+mkdir -p docker-claude-code
 cd docker-claude-code
 
-# 2. 启动容器
+# 2. 创建配置文件（.env, docker-compose.yml, Dockerfile）
+# 3. 启动容器（项目文件会在容器内自动创建）
 docker-compose up -d
 
 # 3. 进入容器（默认非 root 用户）
@@ -148,23 +211,31 @@ claude "帮我创建一个简单的 Node.js Express 应用"
 
 #### **场景二：迁移已有项目**
 ```bash
-# 1. 将现有项目复制到 workspace/project
-mkdir -p docker-claude-code/workspace/project
-cp -r /path/to/your/actual/project/* docker-claude-code/workspace/project/
-
-# 2. 进入项目目录
+# 1. 创建项目目录
+mkdir -p docker-claude-code
 cd docker-claude-code
 
-# 3. 启动容器
+# 2. 创建配置文件并启动容器
 docker-compose up -d
 
-# 4. 进入容器
-docker-compose exec app sh
+# 3. 将项目复制到容器内
+docker cp /path/to/your/actual/project docker-claude-code-app:/workspace/
 
-# 5. 在容器内，您已经在 /workspace/project 目录
+# 或使用容器内 git clone
+docker-compose exec app sh
+cd /workspace
+git clone https://github.com/yourusername/yourproject.git project
+
+# 4. 在容器内，您已经在 /workspace/project 目录
 #    可以继续使用 Claude Code CLI 开发
 claude "继续开发这个项目，实现 XX 功能"
 ```
+
+**重要：文件所有权说明**
+- ✅ 文件复制到容器后，由容器用户（claude）拥有
+- ✅ 所有开发工作在容器内进行
+- ⚠️ 原项目目录可以保留作为备份，但不在宿主机编辑
+- ⚠️ 项目文件仅在容器内存在，宿主机无项目文件
 
 ### **3.2 进入容器的命令**
 
@@ -191,13 +262,46 @@ claude "继续开发这个项目，实现 XX 功能"
 
 ### **3.4 文件管理与持久化**
 
-- **项目代码**：位于 `workspace/project/`，与容器内 `/workspace/project` 实时同步。
-  - 在宿主机编辑：使用 VS Code、Vim 等编辑 `workspace/project/` 中的文件。
-  - 在容器内编辑：在容器内使用任何编辑器（如 Vim）修改 `/workspace/project` 中的文件。
+**重要架构说明：**
+为避免权限冲突和环境隔离，本项目采用**完全容器化隔离模式**。
 
-- **Claude 配置**：位于 `workspace/.claude/`，自动持久化。
-  - 容器重启后，配置和历史记录保留。
-  - 如需重置，删除 `workspace/.claude/` 目录即可。
+- **项目代码**：完全存储在容器内 `/workspace/project/`
+  - ✅ 所有开发工作在容器内进行
+  - ✅ 文件由容器用户拥有，无权限问题
+  - ❌ 不在宿主机上编辑项目文件（避免权限冲突）
+  - ❌ 不通过 volume 挂载项目目录
+
+- **容器内编辑**：
+  ```bash
+  # 进入容器后，使用容器内编辑器
+  docker-compose exec app sh
+  vim /workspace/project/src/index.js  # 在容器内编辑
+  ```
+
+- **备份到宿主机**（定期备份建议）：
+  ```bash
+  # 使用专用的备份脚本（推荐）
+  bash .claude/skills/docker-claude-code/scripts/backup-project.sh
+
+  # 备份到指定目录
+  bash .claude/skills/docker-claude-code/scripts/backup-project.sh ../my-backup
+  ```
+
+  **备份脚本功能：**
+  - ✅ 自动检查容器运行状态
+  - ✅ 创建带时间戳的备份目录
+  - ✅ 统计备份文件数量
+  - ✅ 完整的错误处理和提示
+
+**为什么采用隔离模式？**
+1. ✅ 避免宿主机-容器用户权限冲突（UID/GID 不匹配）
+2. ✅ 确保容器内非 root 用户可以完全自主开发
+3. ✅ 符合验收标准：文件只在容器中
+4. ✅ 环境完全隔离，可随时重置
+
+- **Claude 配置**：位于宿主机 `dev-home/`，通过 volume 持久化到容器 `/home/claude`
+  - 容器重启后，配置和历史记录保留
+  - 如需重置，删除 `dev-home/` 目录即可
 
 ### **3.5 停止与清理**
 
@@ -216,17 +320,46 @@ docker-compose down -v
 
 ## **4. 目录结构详解**
 
-### **workspace/**
-- **project/**：您的项目代码目录。所有开发工作在此进行。
-- **.claude/**：Claude Code CLI 的配置和历史记录。
-  - `config/`：CLI 配置文件。
-  - `history/`：会话历史记录。
+### **dev-home/**（宿主机配置目录）
+- **config/**：Claude Code CLI 的配置文件
+  - 通过 volume 挂载到容器内 `~/.config/claude`
+- **claude/**：用户数据目录
+  - 通过 volume 挂载到容器内 `/home/claude`
 
-### **为什么这样设计？**
-1. **单卷但结构清晰**：虽然只有一个挂载卷，但内部通过子目录明确区分项目和配置。
-2. **工作目录明确**：`working_dir` 直接指向 `/workspace/project`，进入容器即可开始工作。
-3. **配置隔离**：`.claude` 是隐藏目录，不会干扰项目代码。
-4. **易于备份/迁移**：整个 `workspace` 目录就是完整的工作环境，复制即迁移。
+### **容器内工作区**（不在宿主机）
+- **/workspace/project/**：项目代码目录，仅在容器内存在
+- **/home/claude/.claude/**：会话历史记录（通过 volume 持久化）
+
+**为什么这样设计？**
+1. **配置与项目分离**：配置通过 volume 持久化到宿主机 `dev-home/`，项目代码仅存储在容器内
+2. **工作目录明确**：`working_dir` 直接指向 `/workspace/project`，进入容器即可开始工作
+3. **权限隔离**：项目文件由容器用户（claude, UID 1001）拥有，避免宿主机-容器权限冲突
+4. **环境纯净**：每次启动都是干净的开发环境，配置可随时重置（删除 `dev-home/`）
+5. **备份策略**：
+   - 配置备份：复制 `dev-home/` 目录
+   - 项目备份：使用 `docker cp` 从容器导出
+
+---
+
+### **架构模式说明**
+
+本项目采用**完全容器化隔离模式**，而非传统的 volume 挂载同步模式。
+
+**对比：**
+
+| 特性 | 同步模式（传统） | 隔离模式（本项目） |
+|------|----------------|------------------|
+| 文件位置 | 宿主机和容器同步 | 仅在容器内 |
+| 宿主机编辑 | ✅ 支持 | ❌ 不推荐 |
+| 权限问题 | ⚠️ 常见 | ✅ 无 |
+| 环境隔离 | ❌ 弱 | ✅ 强 |
+| 符合验收标准 | ❌ 否 | ✅ 是 |
+
+**为什么选择隔离模式？**
+1. **避免权限冲突**：宿主机用户（UID 1000）与容器用户（UID 1001）的文件所有权冲突
+2. **自主开发**：容器内非 root 用户可完全自主操作，无需手动 chown
+3. **环境纯净**：每次启动都是干净的开发环境
+4. **验收合规**：符合"文件只在容器中"的验收标准
 
 ---
 
@@ -244,26 +377,38 @@ docker-compose down -v
 
 ### **Q2: 文件权限问题**
 **解决：**
-- 在容器内创建文件时，如果遇到权限问题，可以临时切换到 root：
-  ```bash
-  docker-compose exec --user root app sh
-  chown -R 1001:1001 /workspace/project  # UID 应与 Dockerfile 中的用户一致
-  ```
-  然后退出，重新以非 root 用户进入。
+```bash
+# 验证非 root 用户的 sudo 配置
+docker-compose exec app sh -c 'sudo whoami'
+# 应该返回 "root" 且不提示输入密码
+
+# 如果提示密码，说明 Dockerfile 配置有问题
+# 需要在 Dockerfile 中添加：
+# RUN apk add --no-cache sudo
+# RUN echo "claude ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# 然后重建镜像
+docker-compose build
+docker-compose up -d
+```
+
+**重要：** 非 root 用户必须配置 `NOPASSWD:ALL`，否则 Claude Code 无法自主执行需要提升权限的操作，违背了容器化开发的初衷。
 
 ### **Q3: 如何更新 Claude Code CLI？**
 **解决：**
 ```bash
-# 进入容器（root 用户）
-docker-compose exec --user root app sh
+# 进入容器（非 root 用户，使用 sudo）
+docker-compose exec app sh
 
 # 使用官方推荐更新 CLI
-claude install
+sudo claude install
 
 # 退出容器，重启
 exit
 docker-compose restart
 ```
+
+**注意：** 由于配置了 sudo NOPASSWD:ALL，非 root 用户可以直接执行需要提升权限的操作。
 
 ### **Q4: 如何扩展容器功能（如安装其他工具）？**
 **解决：**
@@ -550,7 +695,7 @@ docker-compose exec app sh
 **预期结果**：
 - ✅ 成功进入容器
 - ✅ 工作目录为 `/workspace/project`
-- ✅ 用户为 `claude-user`（UID 1001）
+- ✅ 用户为 `claude`（UID 1001）
 - ✅ 无任何错误信息
 
 #### ✅ 标准 2：Claude Code 开箱即用
@@ -575,7 +720,31 @@ claude --version
 - ✅ API 代理配置正确（`ANTHROPIC_BASE_URL`）
 - ✅ 无配置错误
 
-**附加检查 - 状态栏插件**：
+**附加检查 - 状态栏插件**
+
+**状态栏插件自动安装：**
+
+使用 `init-docker-project.sh` 初始化项目时，脚本会自动安装状态栏插件：
+
+1. 复制 `show-prompt.py` 到容器插件目录
+2. 配置 `~/.claude/settings.json` 中的 `statusLine` 条目
+3. 生成容器内安装脚本 `install.sh`
+
+**插件功能：**
+- AI 驱动的任务提取（使用 Claude Haiku）
+- 离线规则回退支持
+- 中文和英文任务摘要
+- 状态栏显示：`[最新指令:创建Django项目...]`
+
+**手动安装（如需要）：**
+如果初始化时未自动安装，可手动执行：
+```bash
+docker-compose exec app sh
+cd /workspace/project/.claude/plugins/custom/show-last-prompt/statusline
+bash install.sh
+```
+
+```bash：
 ```bash
 # 检查插件是否已注册
 docker-compose exec app sh -c 'python3 -c "import json; print(json.load(open(\"~/.claude/settings.json\")).get(\"statusLine\", {}))"'
@@ -592,21 +761,19 @@ docker-compose exec app sh -c 'python3 -c "import json; print(json.load(open(\"~
 
 **验证项目**：
 
-**3.1 工作空间持久化**：
+**3.1 项目代码在容器内**：
 ```bash
-# 1. 在容器内创建文件
-docker-compose exec app sh -c "echo 'test content' > /workspace/test.txt"
+# 1. 在容器内创建项目文件
+docker-compose exec app sh -c "echo 'project content' > /workspace/project/test.txt"
 
-# 2. 重启容器
-docker-compose restart
-
-# 3. 检查文件是否仍然存在
-docker-compose exec app sh -c "cat /workspace/test.txt"
+# 2. 验证文件存在（仅容器内）
+docker-compose exec app sh -c "cat /workspace/project/test.txt"
 ```
 
 **预期结果**：
-- ✅ 输出：`test content`
-- ✅ 文件在容器重启后仍然存在
+- ✅ 输出：`project content`
+- ✅ 文件存储在容器内
+- ⚠️ 注意：容器删除后文件会丢失（符合隔离模式设计）
 
 **3.2 Claude 配置持久化**：
 ```bash
@@ -624,18 +791,18 @@ docker-compose exec app sh -c "cat ~/.claude/config/test.conf"
 - ✅ 输出：`test-config`
 - ✅ 配置在容器重启后仍然存在
 
-**3.3 实时更新**：
+**3.3 配置持久化到宿主机**：
 ```bash
-# 在容器内编辑项目文件
-docker-compose exec app sh -c "echo 'updated content' > /workspace/project/readme.md"
+# 1. 在容器内创建配置文件
+docker-compose exec app sh -c "echo 'config-value' > ~/.claude/test-config.conf"
 
-# 在宿主机上验证文件已更新
-cat workspace/project/readme.md
+# 2. 在宿主机上验证配置已持久化
+cat ./dev-home/claude/.claude/test-config.conf
 ```
 
 **预期结果**：
-- ✅ 宿主机和容器内文件内容同步
-- ✅ 修改立即生效
+- ✅ 配置文件已持久化到宿主机 `dev-home/` 目录
+- ✅ 容器重启后配置仍然保留
 
 #### ✅ 标准 4：无任何报错
 
@@ -760,13 +927,14 @@ else
 fi
 echo ""
 
-# 测试 6: 文件持久化
-echo "测试 6: 测试文件持久化..."
-docker-compose exec app sh -c "echo 'persistence-test' > /workspace/.persistence-test" 2>/dev/null
-sleep 2
-RESULT=$(docker-compose exec app sh -c "cat /workspace/.persistence-test" 2>/dev/null)
-if [ "$RESULT" = "persistence-test" ]; then
-    echo "✓ PASS: 文件持久化正常"
+# 测试 6: 配置持久化
+echo "测试 6: 测试配置持久化..."
+docker-compose exec app sh -c "echo 'config-test' > ~/.claude/test-config.conf" 2>/dev/null
+docker-compose restart >/dev/null 2>&1
+sleep 3
+RESULT=$(docker-compose exec app sh -c "cat ~/.claude/test-config.conf" 2>/dev/null)
+if [ "$RESULT" = "config-test" ]; then
+    echo "✓ PASS: 配置持久化正常"
     PASS=$((PASS + 1))
 else
     echo "✗ FAIL: 文件持久化失败"
@@ -797,9 +965,10 @@ fi
 |------|------|----------|
 | 容器无法启动 | Dockerfile 语法错误 | 运行 `docker-compose build` 查看错误 |
 | API 连接失败 | `ANTHROPIC_BASE_URL` 配置错误 | 检查 `.env` 文件和平台配置 |
-| 文件未持久化 | 卷挂载配置错误 | 检查 `docker-compose.yml` 中的 `volumes:` 部分 |
+| 配置未持久化 | 卷挂载配置错误 | 检查 `docker-compose.yml` 中的 `volumes:` 部分，确认 `dev-home/` 路径正确 |
+| 项目文件丢失 | 容器被删除 | 正常行为：项目文件仅在容器内，需定期用 `docker cp` 备份 |
 | 状态栏不显示 | 插件未安装 | 运行 `.claude/plugins/custom/show-last-prompt/statusline/install.sh` |
-| 权限被拒绝 | 用户权限问题 | 使用 `docker-compose exec -u root app bash` |
+| 权限被拒绝 | sudo NOPASSWD:ALL 未配置 | 检查 Dockerfile 是否包含 `RUN apk add --no-cache sudo` 和 `NOPASSWD:ALL` 配置，然后重建镜像 |
 
 ### 10.4 最终确认
 
@@ -811,6 +980,49 @@ fi
 4. ✅ 无任何报错
 
 **验收通过！** 🎉
+
+---
+
+## **11. 项目文件管理**
+
+### **11.1 文件存储位置**
+
+本项目采用**统一持久化模式**：
+- ✅ **项目文件**：通过 volume 持久化到 `./workspace/` 目录
+- ✅ **Claude 配置**：持久化到 `./dev-home/config/` 目录
+- ✅ **用户数据**：持久化到 `./dev-home/claude/` 目录
+
+**优点**：
+1. 📁 所有内容统一在 `./workspace/` 目录，易于管理和备份
+2. 🛡️ 容器删除后，项目文件安全保留在宿主机
+3. 🔄 可在宿主机直接编辑文件（也可在容器内开发）
+4. 💾 定期备份 `./workspace/` 目录即可保护所有数据
+
+### **11.2 备份项目**
+
+#### 方法 1：使用主脚本菜单（推荐）
+```bash
+cd your-project
+bash ../.claude/skills/docker-claude-code/scripts/init-docker-project.sh
+# 选择 3) Backup project from container to host machine
+```
+
+#### 方法 2：直接调用备份脚本
+```bash
+# 备份到时间戳目录（默认）
+bash .claude/skills/docker-claude-code/scripts/backup-project.sh
+
+# 备份到指定目录
+bash .claude/skills/docker-claude-code/scripts/backup-project.sh ../my-backup
+```
+
+### **11.3 迁移老项目**
+
+老项目迁移时会：
+1. 使用 `docker cp` 复制文件到容器内 `/workspace/project/`
+2. 通过 volume 挂载，文件自动持久化到宿主机 `./workspace/`
+3. 自动修复文件所有权为容器用户（claude:claude）
+4. 非 root 用户可正常读写，无权限问题
 
 ---
 

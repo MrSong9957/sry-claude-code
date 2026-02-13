@@ -1,0 +1,25 @@
+name: Docker
+
+services:
+  app:
+    build: .
+    container_name: docker-app
+    ports:
+      - "8080:8000"
+    environment:
+      - ENV=development
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # CC Switch 代理端点
+      - ANTHROPIC_BASE_URL=http://host.docker.internal:15721
+    extra_hosts:
+      # 使容器能访问宿主机的 CC Switch 服务
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # 项目代码目录（读写，允许 Claude 修改代码）
+      - ..:/workspace/project
+      # Claude 配置持久化（包含会话历史、记忆、设置等）
+      - ./workspace/.claude:/workspace/.claude
+    working_dir: /workspace/project
+    stdin_open: true
+    tty: true
+    restart: unless-stopped

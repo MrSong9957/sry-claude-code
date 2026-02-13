@@ -64,7 +64,16 @@
       "Bash(npx eslint:*)",
       "Bash(./supabase.bat:*)",
       "Bash(git fetch:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(gh repo rename:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(chmod +x \"e:\\\\Files\\\\PycharmProjects\\\\GitHub\\\\sry-claude-code\\\\.claude\\\\skills\\\\docker-claude-code\\\\scripts\"/*.sh)",
+      "Bash(bash -n \"e:\\\\Files\\\\PycharmProjects\\\\GitHub\\\\sry-claude-code\\\\.claude\\\\skills\\\\docker-claude-code\\\\scripts\\\\init-docker-project.sh\")",
+      "Bash(docker build:*)",
+      "Bash(bash -n \"e:/Files/PycharmProjects/GitHub/sry-claude-code/.claude/skills/docker-claude-code/scripts/init-docker-project.sh\")",
+      "Bash(bash -n \"e:/Files/PycharmProjects/GitHub/sry-claude-code/.claude/skills/docker-claude-code/scripts/detect-platform.sh\")",
+      "Bash(bash:*)",
+      "Bash(chmod:*)"
     ]
   }
 }
