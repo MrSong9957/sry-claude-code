@@ -7,98 +7,108 @@ description: Use when setting up Docker containerized development environment wi
 
 ## Overview
 
-Containerized development environment for Claude Code CLI with automatic initialization, configuration persistence, and multi-user support. **Core principle**: Single container with unified workspace persistence, complete isolation from host, ready-to-use Claude Code CLI.
+Containerized development environment for Claude Code CLI with automatic initialization, configuration persistence, and multi-user support.
 
-**Critical**: This skill enforces **strict acceptance criteria** - no shortcuts, no rationalizations, no "good enough" compromises. If criteria say "forbid X", then X is forbidden - period.
+**Core principle**: Single container with unified workspace persistence, complete isolation from host, ready-to-use Claude Code CLI.
 
-## When to Use
-
-```
-Need Docker development environment?
-│
-├─→ Yes: Use this skill
-│
-└─→ No: Do not use this skill
-```
-
-**Symptoms and use cases:**
+**When to use**:
 - User explicitly requests Docker container for Claude Code development
-- User mentions "containerized", "Docker environment", "dev container"
 - User requires persistent configuration across container restarts
 - User needs both root and non-root user access
-- User wants latest Claude Code CLI with `claude doctor` verification
-- User needs statusline plugin integration
+- User wants latest Claude Code CLI with statusline plugin
 
-**When NOT to use:**
-- User wants traditional volume-synced development (host files ↔ container)
-- User only needs basic Docker setup without Claude Code
-- User requests different containerization strategy
+**Critical**: This skill enforces **strict acceptance criteria** - no shortcuts, no rationalizations, no "good enough" compromises.
 
-**Violating the letter of these rules is violating the spirit of these rules.**
-
-**Rationalizations for violating acceptance criteria:**
-
-| Excuse | Reality |
-|--------|---------|
-| "Directory names don't matter" | Docker/ is required by Criterion 1 - other names violate acceptance standard |
-| "Can create Docker/ later" | Must exist at initialization - delayed creation violates Criterion 1 |
-| "Config files can be manual" | Init script must create them - manual setup violates Criterion 2 |
-| "Can restore from git history" | Scripts must auto-restore - manual restoration violates automation principle |
-| ".env.example not needed" | Required by Criterion 1 - omission violates acceptance standard |
-| "Version number is enough" | Criterion 3 requires claude doctor - version display alone is insufficient |
-| "Can connect to API = latest" | Must verify with claude doctor - connection alone proves nothing |
-| "Plugin installed, no need to verify" | Criterion 4 requires verification - unverified claims violate standard |
-| "Non-root user is enough" | Criterion 5 requires both users - single-user violates multi-user requirement |
-| "Most tests pass = OK" | Criterion 6 requires ALL tests pass - partial failure violates acceptance standard |
-| "Good enough" compromise | Exact compliance required - "good enough" = not compliant |
-| "Practically works" | If it violates any criterion, it's broken - practical ≠ correct |
-| "Minor difference" | No difference is minor if it violates acceptance criteria |
-| "Will fix later" | Must pass tests NOW - deferred fixes = non-compliant |
-| "Documentation is optional" | Required by Criterion 4 - undocumented plugins violate standard |
-| "Manual testing is sufficient" | Criterion 6 requires automated tests - manual testing allows subjective interpretation |
-
-**ALL of these rationalizations mean: Fix the violation. Do not proceed until compliant.**
+---
 
 ## Acceptance Criteria (MANDATORY)
 
-**CRITICAL**: All criteria below MUST be satisfied exactly as stated. No partial compliance, no "substantial compliance", no rationalizations allowed.
+**CRITICAL**: All criteria below MUST be satisfied exactly as stated. No partial compliance, no rationalizations allowed.
 
 ### ✅ Criterion 1: Directory Structure
 
 **Required directory structure:**
 ```
 project-root/
-└── Docker/           # ALL container-related files
-    ├── Dockerfile
-    ├── docker-compose.yml
-    ├── .env.example
-    └── workspace/       # Persistent workspace for container content
-        └── project/    # Container working directory (Claude Code CLI + project code)
+└── .claude/
+    └── skills/
+            └── docker-claude-code/
+                ├── init-docker-project.sh  # Project initialization script
+                ├── backup-project.sh     # Backup script
+                ├── diagnose-docker.sh   # Diagnostics script
+                ├── test-docker.sh        # Acceptance tests
+                ├── validate-config.sh  # Configuration validator
+                └── claude-code-statusline-plugin/  # Statusline plugin
+                    ├── .claude-plugin/
+                    │   └── plugin.json
+                    ├── install.sh
+                    └── statusline/
+                        └── show-prompt.py
 ```
 
 **Verification:**
 ```bash
 # From project root
-test -d Docker/workspace && echo "PASS" || echo "FAIL"
+# 验证项目已通过 init-docker-project.sh 初始化
+test -f .claude/skills/docker-claude-code/scripts/init-docker-project.sh && echo "PASS" || echo "FAIL"
+
+# 验证必要的脚本文件存在
+test -f .claude/skills/docker-claude-code/scripts/backup-project.sh && echo "PASS" || echo "FAIL"
+test -f .claude/skills/docker-claude-code/scripts/diagnose-docker.sh && echo "PASS" || echo "FAIL"
+test -f .claude/skills/docker-claude-code/scripts/test-docker.sh && echo "PASS" || echo "FAIL"
+
+# 验证插件目录存在
+test -d .claude/skills/docker-claude-code/claude-code-statusline-plugin && echo "PASS" || echo "FAIL"
+
+# 验证配置文件已生成(在项目根目录)
+test -f .env && echo "PASS" || echo "FAIL"
+test -f docker-compose.yml && echo "PASS" || echo "FAIL"
+test -f Dockerfile && echo "PASS" || echo "FAIL"
+```
+
+**Expected output:**
+```
+PASS
+PASS
+PASS
+PASS
+PASS
+PASS
+PASS
+PASS
+PASS
 ```
 
 **No exceptions:**
-- ❌ DO NOT put container files in project root
-- ❌ DO NOT create workspace outside Docker/
-- ❌ DO NOT use different directory names
+- ❌ DO NOT manually modify container-generated files (使用 init 脚本进行修改)
+- ❌ DO NOT skip settings.json registration
 
 ### ✅ Criterion 2: Persistent Initialized Container
 
 **Required:**
-- Single container initialized in Docker/workspace
-- Workspace volume: `./Docker/workspace:/workspace`
-- Config persistence: `./Docker/dev-home/config:/home/claude/.config/claude`
-- User data persistence: `./Docker/dev-home/claude:/home/claude`
+- Container name: `docker-claude-code-app`
+- Three persistent volumes mounted:
+  - Project workspace: `${WORKSPACE_PATH:-./workspace}:/workspace`
+  - Claude configuration: `${CLAUDE_CONFIG_PATH:-./dev-home/config}:/home/claude/.config/claude`
+  - Claude user data: `${CLAUDE_HOME_PATH:-./dev-home/claude}:/home/claude`
 - Container can start/stop/restart without losing data
+- Working directory in container: `/workspace/project`
+- Environment variables configured in `.env` file:
+  ```bash
+  # .env file content (generated by init-docker-project.sh)
+  ANTHROPIC_API_KEY=dummy  # Uses host's API key
+  ANTHROPIC_BASE_URL=http://host.docker.internal:15721  # CC Switch proxy port
+  # Optional paths (defaults shown)
+  # WORKSPACE_PATH=./workspace
+  # CLAUDE_CONFIG_PATH=./dev-home/config
+  # CLAUDE_HOME_PATH=./dev-home/claude
+  ```
+
+**Note**: Reference `.env.example` template in skill directory for all available configuration options and platform-specific notes.
 
 **Verification:**
 ```bash
-cd Docker
+# From project root (after init-docker-project.sh)
 docker-compose up -d
 docker-compose exec app sh -c "echo 'container-access-ok'" && echo "PASS" || echo "FAIL"
 docker-compose down
@@ -119,7 +129,7 @@ docker-compose down
 
 **Verification:**
 ```bash
-cd Docker
+# From project root (after init-docker-project.sh)
 docker-compose up -d
 docker-compose exec app sh -c "claude --version" && echo "PASS" || echo "FAIL"
 docker-compose exec app sh -c "claude doctor | grep -i version" && echo "PASS" || echo "FAIL"
@@ -141,7 +151,8 @@ docker-compose down
 
 **Verification:**
 ```bash
-cd Docker
+# From project root (after init-docker-project.sh)
+docker-compose up -d
 docker-compose exec app sh -c 'python3 -c "import json; settings=json.load(open(\"~/.claude/settings.json\")); print(\"Plugin registered:\" if \"statusLine\" in settings else \"NOT REGISTERED\")"'
 ```
 
@@ -156,13 +167,13 @@ docker-compose exec app sh -c 'python3 -c "import json; settings=json.load(open(
 
 **Required:**
 - Non-root user access: `docker-compose exec app sh`
-- Root user access: `docker-compose exec --user root app sh`
+- Root user access: `docker-compose exec -u root app sh`
 - sudo NOPASSWD:ALL configured for non-root user
 - Both user types can perform their required operations
 
 **Verification:**
 ```bash
-cd Docker
+# From project root (after init-docker-project.sh)
 docker-compose up -d
 # Non-root (default claude user)
 docker-compose exec app sh -c "whoami" && echo "PASS" || echo "FAIL"
@@ -200,127 +211,78 @@ echo "Exit code: $?"
 
 ## Red Flags - STOP and Fix
 
-**ALL of these mean the skill requirements are NOT met:**
 
-- Container files outside Docker/ directory
-- No workspace/ directory in Docker/
-- Missing docker-compose.yml or Dockerfile
-- `claude doctor` not run or fails
-- Statusline plugin not verified in settings.json
+
+
+
+
+
+
 - Non-root user cannot access container
 - Any test fails (exit code ≠ 0)
-- Rationalizations like "close enough", "practically works", "minor difference"
+
+**No rationalizations accepted:**
+- "Directory names don't matter" → Criterion 1 requires exact structure
+- "Can create later" → Must exist at initialization
+- "Good enough" → Exact compliance required (Criterion 6)
 
 **If you see ANY red flag, STOP and fix before proceeding.**
 
-## Quick Reference
+---
 
-| Operation | Command | Verification |
-|-----------|---------|-------------|
-| **Initialize project** | `bash .claude/skills/docker-claude-code/scripts/init-docker-project.sh` | Creates Docker/, Dockerfile, docker-compose.yml |
-| **Validate config** | `bash .claude/skills/docker-claude-code/scripts/validate-config.sh` | Checks all required files and settings |
-| **Diagnose issues** | `bash .claude/skills/docker-claude-code/scripts/diagnose-docker.sh` | Runs diagnostic decision tree |
-| **Enter container (non-root)** | `cd Docker && docker-compose exec app sh` | User: claude (UID 1001) |
-| **Enter container (root)** | `cd Docker && docker-compose exec -u root app sh` | User: root |
-| **Verify CLI version** | `docker-compose exec app sh -c "claude doctor"` | Shows latest version |
-| **Verify plugin** | `docker-compose exec app sh -c 'python3 -c "import json; print(json.load(open(\"~/.claude/settings.json\")).get(\"statusLine\"))"'` | Shows plugin config |
-| **Backup project** | `bash .claude/skills/docker-claude-code/scripts/backup-project.sh` | Copies files from container |
+## Quick Start (TDD Workflow)
 
-## Implementation
-
-### Step 1: Initialize Project
-
-**REQUIRED SUB-SKILL**: Use tdd-workflow for all implementation work.
+### Phase 1: Initialize (RED Phase)
 
 **MANDATORY**: Start with test-driven development, NOT implementation.
 
 1. **Create tests FIRST** (RED phase)
-   - Write test verifying Docker/ directory structure
-   - Write test verifying container startup and access
-   - Write test verifying Claude CLI version
-   - Write test verifying statusline plugin registration
-   - Write test verifying multi-user access
+   ```bash
+   bash .claude/skills/docker-claude-code/scripts/test-docker.sh
+   # Tests MUST fail before implementation
+   ```
 
-2. **Run tests - watch them FAIL** (RED phase confirmation)
-   - Tests MUST fail before implementation
-   - Document exact failure behavior
+2. **Initialize project**
+   ```bash
+   bash .claude/skills/docker-claude-code/scripts/init-docker-project.sh
+   # Choose scenario: 1) New Project
+   ```
 
-3. **Implement MINIMALLY** (GREEN phase)
-   - Use init script: `bash .claude/skills/docker-claude-code/scripts/init-docker-project.sh`
-   - Choose scenario: 1) New Project
-   - Verify tests pass
+3. **Validate configuration**
+   ```bash
+   bash .claude/skills/docker-claude-code/scripts/validate-config.sh
+   # Exit code 0 = all checks PASS
+   ```
 
-4. **Refactor** (IMPROVE phase)
-   - Close any test loopholes
-   - Add coverage for edge cases
-   - Re-test until bulletproof
+### Phase 2: Deploy (GREEN Phase)
 
-### Step 2: Validate Configuration
+1. **Start container**
+   ```bash
+   # From project root (after init-docker-project.sh)
+   docker-compose up -d
+   ```
 
-**MANDATORY**: Validate after initialization.
+2. **Verify Claude CLI**
+   ```bash
+   docker-compose exec app sh -c "claude --version"
+   docker-compose exec app sh -c "claude doctor"
+   # Must show latest version
+   ```
 
-```bash
-cd Docker
-bash ../.claude/skills/docker-claude-code/scripts/validate-config.sh
-```
+3. **Verify statusline plugin**
+   ```bash
+   docker-compose exec app sh -c 'python3 -c "import json; print(json.load(open(\"~/.claude/settings.json\")).get(\"statusLine\"))"'
+   # Must show plugin config object
+   ```
 
-**Expected result**: Exit code 0, all checks PASS
-
-**If validation fails**:
-- Read error messages carefully
-- Fix reported issues
-- Re-run validation
-- DO NOT proceed until validation passes
-
-### Step 3: Start Container
-
-```bash
-cd Docker
-docker-compose up -d
-```
-
-**Verify container is running**:
-```bash
-docker ps | grep docker-claude-code-app
-```
-
-**Expected output**: Container appears in list with "Up" status
-
-### Step 4: Verify Claude CLI and Plugin
-
-**MANDATORY**: Verify before use.
-
-```bash
-# Check CLI version (should be latest)
-docker-compose exec app sh -c "claude --version"
-
-# Verify with claude doctor
-docker-compose exec app sh -c "claude doctor"
-
-# Verify statusline plugin registration
-docker-compose exec app sh -c 'python3 -c "import json; print(json.load(open(\"~/.claude/settings.json\")).get(\"statusLine\")"'
-```
-
-**Expected results**:
-- Claude CLI version displayed
-- `claude doctor` confirms version is latest
-- Statusline plugin config object displayed
-
-**If any verification fails**:
-- Stop
-- Run diagnostic: `bash .claude/skills/docker-claude-code/scripts/diagnose-docker.sh`
-- Fix reported issues
-- Re-verify
-- DO NOT use unverified environment
-
-### Step 5: Enter Container and Work
+### Phase 3: Use (IMPROVE Phase)
 
 **Non-root user (DEFAULT, RECOMMENDED):**
 ```bash
 docker-compose exec app sh
 ```
 - User: claude (UID 1001)
-- Working directory: /workspace/project
+- Working directory: `/workspace/project` (项目代码挂载点)
 - Has sudo NOPASSWD:ALL for privileged operations
 
 **Root user (EMERGENCY ONLY):**
@@ -328,80 +290,67 @@ docker-compose exec app sh
 docker-compose exec -u root app sh
 ```
 - User: root
-- Working directory: /workspace/project
 - Use ONLY when non-root user cannot perform required operation
 
 **IMPORTANT**: Prefer non-root user. Root user breaks container isolation principle.
 
-### Step 6: Stop Container (When done)
+### Phase 4: Test (VALIDATE Phase)
+
+**MANDATORY**: Verify before use.
 
 ```bash
-cd Docker
-docker-compose stop
+# Run all tests - must exit with code 0
+bash .claude/skills/docker-claude-code/scripts/test-docker.sh
+echo "Exit code: $?"  # Must be 0
 ```
 
-**To remove container (keeps data)**:
-```bash
-docker-compose down
-```
+**TDD Principle**: Tests first, implement minimally, verify all pass.
 
-**To remove container AND data (DESTRUCTIVE)**:
-```bash
-docker-compose down -v
-```
-
-**WARNING**: `down -v` deletes workspace/ directory - use with caution.
+---
 
 ## Common Mistakes
 
-| Mistake | Why Wrong | Fix |
-|---------|-----------|-----|
-| Putting Dockerfile in project root | Violates Criterion 1 | Move to Docker/ directory |
-| Skipping claude doctor verification | Violates Criterion 3 | Always run `claude doctor` before claiming "latest" |
-| Assuming plugin installed without verification | Violates Criterion 4 | Verify in settings.json |
-| Using root user by default | Breaks isolation principle | Use non-root (claude) user |
-| Ignoring test failures | Violates Criterion 6 | Fix failing tests before proceeding |
-| "Good enough" rationalizations | Violates skill principles | Exact compliance required |
-| Manual testing instead of automated | Allows subjective interpretation | Use test scripts only |
+| Mistake | Violates | Fix |
+|---------|----------|-----|
+| Manual Dockerfile creation without init script | Criterion 1 | Always use `init-docker-project.sh` for initialization |
+| Skipping claude doctor verification | Criterion 3 | Always run `claude doctor` before claiming "latest" |
+| Assuming plugin installed without verification | Criterion 4 | Verify in settings.json |
+| Using root user by default | Isolation principle | Use non-root (claude) user |
+| Ignoring test failures | Criterion 6 | Fix failing tests before proceeding |
+| "Good enough" rationalizations | Skill principles | Exact compliance required |
+
+---
 
 ## Troubleshooting
 
 **MANDATORY**: Use diagnostic script before manual investigation.
 
 ```bash
-cd Docker
-bash ../.claude/skills/docker-claude-code/scripts/diagnose-docker.sh
+# From project root (after init-docker-project.sh)
+bash .claude/skills/docker-claude-code/scripts/diagnose-docker.sh
 ```
 
-**Decision tree:**
-```
-Container not working?
-├─→ API connection fails? → Check ANTHROPIC_BASE_URL
-├─→ Permission denied? → Check sudo NOPASSWD:ALL setup
-├─→ Can't find host? → Verify platform-specific config
-└─→ Config not persisting? → Check volume mounts
-```
+### Common Issues
 
-**Common issues:**
-1. **Container won't start**
-   - Check Dockerfile syntax: `docker-compose build`
-   - Check port conflicts: `docker ps` to see running containers
-   - Check volume mount paths in docker-compose.yml
+**1. Container won't start**
+- Check Dockerfile syntax: `docker-compose build`
+- Check port conflicts: `docker ps` to see running containers
+- Check volume mount paths in docker-compose.yml
 
-2. **Claude CLI can't connect**
-   - Verify ANTHROPIC_BASE_URL matches CC Switch port (default 15721)
-   - Test from container: `docker-compose exec app sh -c "curl -v $ANTHROPIC_BASE_URL"`
-   - Check CC Switch is running on host
+**2. Claude CLI can't connect**
+- Verify ANTHROPIC_BASE_URL matches CC Switch port (default 15721)
+- Test from container: `docker-compose exec app sh -c "curl -v $ANTHROPIC_BASE_URL"`
+- Check CC Switch is running on host
 
-3. **Permission denied errors**
-   - Verify sudo NOPASSWD:ALL in Dockerfile
-   - Rebuild image: `docker-compose build --no-cache`
-   - Restart container: `docker-compose up -d`
+**3. Permission denied errors**
+- Verify sudo NOPASSWD:ALL in Dockerfile
+- Rebuild image: `docker-compose build --no-cache`
+- Restart container: `docker-compose up -d`
 
-4. **Config not persisting**
-   - Verify volume mounts in docker-compose.yml
-   - Check workspace/ directory exists
-   - Verify dev-home/ directories exist
+**4. Config not persisting**
+- Verify volume mounts in docker-compose.yml
+- Check workspace/ directory exists
+- Verify dev-home/ directories exist
 
 **If diagnostic doesn't resolve issue:**
 - Read diagnostic output carefully
@@ -409,17 +358,17 @@ Container not working?
 - Re-run diagnostic to verify fix
 - DO NOT skip diagnostic steps
 
+---
+
 ## Architecture Pattern
 
-**Isolation mode** (NOT sync mode):
+**Isolation Mode** (NOT sync mode):
 
-| Aspect | Sync Mode (Traditional) | Isolation Mode (This Skill) |
-|--------|---------------------------|---------------------------|
-| File location | Host ↔ container synced | Container-only |
-| Host editing | ✅ Supported | ❌ Not recommended |
-| Permission issues | ⚠️ Common | ✅ None |
-| Environment isolation | ❌ Weak | ✅ Strong |
-| Acceptance criteria compliant | ❌ No | ✅ Yes |
+**Key differences:**
+- **File location**: Container-only (not synced with host)
+- **Permissions**: No UID/GID conflicts between host and container
+- **Environment isolation**: Strong separation from host system
+- **Acceptance criteria**: Compliant with "files only in container" requirement
 
 **Why isolation mode?**
 1. Avoids host-container UID/GID conflicts
@@ -428,55 +377,34 @@ Container not working?
 4. Complies with "files only in container" acceptance criterion
 
 **Backup strategy:**
-- Configuration backup: Copy dev-home/ directory
-- Project backup: Use `docker cp` to export from container
-- Automated backup: Use backup-project.sh script
+- **Configuration backup**: Copy dev-home/ directory
+- **Project backup**: Use `docker cp` to export from container
+- **Automated backup**: Use backup-project.sh script
 
-## Verification Before Use
+---
 
-**MANDATORY**: Verify ALL criteria before using environment.
+## Scripts Reference
 
-```bash
-# 1. Check directory structure
-test -d Docker/workspace || { echo "Criterion 1 FAIL"; exit 1; }
+**All scripts located in**: `.claude/skills/docker-claude-code/scripts/`
 
-# 2. Start container
-cd Docker
-docker-compose up -d || { echo "Criterion 2 FAIL"; exit 1; }
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| **init-docker-project.sh** | Initialize project (new/migrate/backup) | `bash .../init-docker-project.sh` |
+| **validate-config.sh** | Validate configuration files and settings | `bash .../validate-config.sh` |
+| **diagnose-docker.sh** | Diagnose issues with decision tree | `bash .../diagnose-docker.sh` |
+| **test-docker.sh** | Run all acceptance tests | `bash .../test-docker.sh` |
+| **backup-project.sh** | Backup container files to host | `bash .../backup-project.sh` |
 
-# 3. Verify Claude CLI
-docker-compose exec app sh -c "claude --version" || { echo "Criterion 3 FAIL"; exit 1; }
-docker-compose exec app sh -c "claude doctor" || { echo "Criterion 3 FAIL"; exit 1; }
+### Statusline Plugin
 
-# 4. Verify statusline plugin
-docker-compose exec app sh -c 'python3 -c "import json; print(json.load(open(\"~/.claude/settings.json\")).get(\"statusLine\")"' || { echo "Criterion 4 FAIL"; exit 1; }
+**Location**: `.claude/skills/docker-claude-code/claude-code-statusline-plugin/`
 
-# 5. Verify multi-user access
-docker-compose exec app sh -c "whoami" || { echo "Criterion 5 FAIL"; exit 1; }
-docker-compose exec -u root app sh -c "whoami | grep -q root" || { echo "Criterion 5 FAIL"; exit 1; }
+**Installation**: Automatic via init-docker-project.sh script
 
-# 6. Run automated tests
-bash ../.claude/skills/docker-claude-code/scripts/test-docker.sh || { echo "Criterion 6 FAIL"; exit 1; }
+**Components:**
+- `statusline/show-prompt.py` - Main plugin script
+- `install.sh` - Installation script (Linux/macOS)
+- `install.ps1` - Installation script (Windows)
+- `.claude-plugin/plugin.json` - Plugin metadata
 
-echo "ALL CRITERIA PASS - environment ready for use"
-```
-
-**No exceptions:**
-- ❌ DO NOT skip verification steps
-- ❌ DO NOT use environment that fails any criterion
-- ❌ DO NOT assume "probably works" - verify
-
-## Real-World Impact
-
-Using this TDD approach with docker-claude-code skill:
-- ✅ 100% compliance with acceptance criteria
-- ✅ Zero permission conflicts between host and container
-- ✅ Latest Claude Code CLI verified with claude doctor
-- ✅ Statusline plugin always correctly registered
-- ✅ Multi-user access working as designed
-- ✅ All automated tests passing
-- ✅ Complete isolation from host system
-- ✅ Repeatable setup process
-
-**Before this skill**: Common issues - wrong directory structure, outdated CLI, missing plugin, permission conflicts, failed tests.
-**After this skill**: Every deployment meets all criteria exactly, verified by automated tests.
+**Verification**: Plugin must be registered in `~/.claude/settings.json` (see Criterion 4)

@@ -168,6 +168,47 @@ echo ""
 read -p "Enter project name [docker-claude-code]: " project_name
 project_name=${project_name:-docker-claude-code}
 
+# Validate project name (security: prevent path traversal)
+validate_project_name() {
+    local name="$1"
+    # Only allow alphanumeric, underscore, and hyphen
+    if [[ ! "$name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        echo -e "${RED}Error: Invalid project name '$name'${NC}"
+        echo -e "${RED}Only alphanumeric characters, underscore, and hyphen allowed${NC}"
+        exit 1
+    fi
+    # Prevent path traversal
+    if [[ "$name" =~ \.\. ]]; then
+        echo -e "${RED}Error: Path traversal characters not allowed${NC}"
+        exit 1
+    fi
+}
+
+# Validate source path (security: prevent arbitrary file access)
+validate_source_path() {
+    local path="$1"
+    # Check if path exists
+    if [[ ! -d "$path" ]]; then
+        echo -e "${RED}Error: Source path does not exist: $path${NC}"
+        exit 1
+    fi
+    # Resolve to absolute path and prevent path traversal
+    local abs_path=$(cd "$path" 2>/dev/null && pwd) || {
+        echo -e "${RED}Error: Cannot access path: $path${NC}"
+        exit 1
+    }
+    # Check for path traversal in resolved path
+    if [[ "$abs_path" =~ \.\. ]]; then
+        echo -e "${RED}Error: Path traversal characters not allowed${NC}"
+        exit 1
+    fi
+    echo "$abs_path"
+}
+
+echo ""
+
+validate_project_name "$project_name"
+
 echo ""
 echo -e "${BLUE}Initializing ${GREEN}$project_name${NC}..."
 echo ""
@@ -631,8 +672,25 @@ case $SCENARIO in
 
         # Get source path
         read -p "Enter path to existing project: " source_path
+ read -p "Enter path to existing project: " source_path	# Security: Validate source path	source_path=$(validate_source_path "$source_path" 2>/dev/null || exit 1
 
-        # Validate source path
+        # Validate source path (security: prevent arbitrary file access)
+        validate_source_path() {
+            local path="$1"
+            # Check if path exists
+            if [[ ! -d "$path" ]]; then
+                echo -e "${RED}Error: Source path does not exist: $path${NC}"
+                exit 1
+            fi
+            # Resolve to absolute path
+            local abs_path=$(cd "$path" 2>/dev/null && pwd) || {
+                echo -e "${RED}Error: Cannot access path: $path${NC}"
+                exit 1
+            }
+            echo "$abs_path"
+        }
+
+        # Validate source path if provided
         if [ -d "$source_path" ]; then
             echo -e "${GREEN}✓ Source path exists${NC}"
 

@@ -18,9 +18,19 @@ echo ""
 PASS=0
 FAIL=0
 
+# Platform detection for $DOCKER_COMPOSE command
+if docker compose version &> /dev/null; then
+    DOCKER_COMPOSE="docker compose"
+elif $DOCKER_COMPOSE version &> /dev/null; then
+    DOCKER_COMPOSE="$DOCKER_COMPOSE"
+else
+    echo -e "${RED}Error: Neither 'docker compose' nor '$DOCKER_COMPOSE' is available${NC}"
+    exit 1
+fi
+
 # Test 1: Container status
 echo -e "${BLUE}Test 1: Checking container status...${NC}"
-if docker ps --format '{{.Names}}' | grep -q "docker-app"; then
+if docker ps --format '{{.Names}}' | grep -q "docker-claude-code-app"; then
     echo -e "${GREEN}[✓] PASS: Container is running${NC}"
     PASS=$((PASS + 1))
 else
@@ -31,7 +41,7 @@ echo ""
 
 # Test 2: Container access
 echo -e "${BLUE}Test 2: Testing container access...${NC}"
-if docker-compose exec app sh -c "echo 'container-access-ok'" >/dev/null 2>&1; then
+if $DOCKER_COMPOSE exec app sh -c "echo 'container-access-ok'" >/dev/null 2>&1; then
     echo -e "${GREEN}[✓] PASS: Can access container${NC}"
     PASS=$((PASS + 1))
 else
@@ -42,7 +52,7 @@ echo ""
 
 # Test 3: Claude CLI version
 echo -e "${BLUE}Test 3: Checking Claude CLI...${NC}"
-VERSION=$(docker-compose exec app claude --version 2>/dev/null || echo "not found")
+VERSION=$($DOCKER_COMPOSE exec app claude --version 2>/dev/null || echo "not found")
 if [ "$VERSION" != "not found" ]; then
     echo -e "${GREEN}[✓] PASS: Claude CLI is installed - $VERSION${NC}"
     PASS=$((PASS + 1))
@@ -54,8 +64,8 @@ echo ""
 
 # Test 4: Environment variables
 echo -e "${BLUE}Test 4: Verifying environment variables...${NC}"
-API_KEY=$(docker-compose exec app sh -c 'echo $ANTHROPIC_API_KEY' 2>/dev/null)
-BASE_URL=$(docker-compose exec app sh -c 'echo $ANTHROPIC_BASE_URL' 2>/dev/null)
+API_KEY=$($DOCKER_COMPOSE exec app sh -c 'echo $ANTHROPIC_API_KEY' 2>/dev/null)
+BASE_URL=$($DOCKER_COMPOSE exec app sh -c 'echo $ANTHROPIC_BASE_URL' 2>/dev/null)
 
 if [ "$API_KEY" = "dummy" ] && [ -n "$BASE_URL" ]; then
     echo -e "${GREEN}[✓] PASS: Environment variables configured correctly${NC}"
@@ -70,7 +80,7 @@ echo ""
 
 # Test 5: Statusline plugin
 echo -e "${BLUE}Test 5: Checking statusline plugin...${NC}"
-if docker-compose exec app sh -c 'python3 -c "import json; print(json.load(open(\"~/.claude/settings.json\")).get(\"statusLine\", {}) != {})"' >/dev/null 2>&1; then
+if $DOCKER_COMPOSE exec app sh -c 'python3 -c "import json; print(json.load(open(\"~/.claude/settings.json\")).get(\"statusLine\", {}) != {})"' >/dev/null 2>&1; then
     echo -e "${GREEN}[✓] PASS: Statusline plugin is registered${NC}"
     PASS=$((PASS + 1))
 else
@@ -81,10 +91,10 @@ echo ""
 
 # Test 6: Configuration persistence
 echo -e "${BLUE}Test 6: Testing configuration persistence...${NC}"
-docker-compose exec app sh -c "echo 'config-test' > ~/.claude/test-config.conf" 2>/dev/null
-docker-compose restart >/dev/null 2>&1
+$DOCKER_COMPOSE exec app sh -c "echo 'config-test' > ~/.claude/test-config.conf" 2>/dev/null
+$DOCKER_COMPOSE restart >/dev/null 2>&1
 sleep 3
-RESULT=$(docker-compose exec app sh -c "cat ~/.claude/test-config.conf" 2>/dev/null)
+RESULT=$($DOCKER_COMPOSE exec app sh -c "cat ~/.claude/test-config.conf" 2>/dev/null)
 if [ "$RESULT" = "config-test" ]; then
     echo -e "${GREEN}[✓] PASS: Configuration persistence is working${NC}"
     PASS=$((PASS + 1))
