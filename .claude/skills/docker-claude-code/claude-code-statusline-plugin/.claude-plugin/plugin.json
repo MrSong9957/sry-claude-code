@@ -1,0 +1,7 @@
+{
+  "name": "show-last-prompt",
+  "version": "2.3.0",
+  "description": "在状态栏显示用户最后输入的简化版本",
+  "license": "MIT",
+  "homepage": "https://github.com/MrSong9957/claude-code-statusline-plugin"
+}
