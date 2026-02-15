@@ -233,6 +233,27 @@ mkdir -p "$PROJECT_DIR"
 echo -e "${GREEN}✓ Project directory created${NC}"
 echo ""
 
+# Function to create Docker directory
+create_docker_dir() {
+    echo -e "${BLUE}Creating Docker directory...${NC}"
+
+    mkdir -p "$PROJECT_DIR/Docker"
+
+    echo -e "${GREEN}✓ Docker directory created${NC}"
+    echo ""
+}
+
+# Function to create workspace directories for Sync Mode
+create_workspace_dirs() {
+    echo -e "${BLUE}Creating workspace directories...${NC}"
+
+    # Create Docker/workspace/.claude directory structure
+    mkdir -p "$PROJECT_DIR/Docker/workspace/.claude"
+
+    echo -e "${GREEN}✓ Workspace directories created${NC}"
+    echo ""
+}
+
 # Function to create directory structure
 create_directory_structure() {
     echo -e "${BLUE}Creating directory structure...${NC}"
@@ -264,7 +285,7 @@ EOF
 create_env_file() {
     echo -e "${BLUE}Creating .env file...${NC}"
 
-    local env_file="$PROJECT_DIR/.env"
+    local env_file="$PROJECT_DIR/Docker/.env"
 
     if [ -f "$env_file" ]; then
         echo -e "${YELLOW}.env file already exists.${NC}"
@@ -293,11 +314,6 @@ ANTHROPIC_API_KEY=dummy
 
 # 端口要与 CC Switch 本地代理端口一致
 ANTHROPIC_BASE_URL=$base_url
-
-# Optional: Custom paths (defaults shown)
-# WORKSPACE_PATH=./workspace
-# DEV_HOME_PATH=./dev-home/claude
-# CLAUDE_CONFIG_PATH=./dev-home/config
 EOF
 
     echo -e "${GREEN}✓ .env file created${NC}"
@@ -310,7 +326,7 @@ EOF
 create_docker_compose() {
     echo -e "${BLUE}Creating docker-compose.yml...${NC}"
 
-    local compose_file="$PROJECT_DIR/docker-compose.yml"
+    local compose_file="$PROJECT_DIR/Docker/docker-compose.yml"
 
     if [ -f "$compose_file" ]; then
         echo -e "${YELLOW}docker-compose.yml already exists.${NC}"
@@ -334,18 +350,16 @@ services:
     environment:
       - ENV=development
       - ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY}
-      - ANTHROPIC_BASE_URL=\${ANTHROPIC_BASE_URL:-http://host.docker.internal:15721}
+      - ANTHROPIC_BASE_URL=\${ANTHROPIC_BASE_URL}
     extra_hosts:
       # Linux 兼容：使容器能访问宿主机服务
       # Windows/Mac (Docker Desktop) 会自动忽略此配置
       - "host.docker.internal:host-gateway"
     volumes:
-      # 统一持久化：项目、配置、数据都在 ./workspace 目录
-      - ${WORKSPACE_PATH:-./workspace}:/workspace
-      # 持久化 Claude 配置（API 密钥、历史记录等）
-      - ${CLAUDE_CONFIG_PATH:-./dev-home/config}:/home/claude/.config/claude
-      # 持久化 Claude 用户数据
-      - ${CLAUDE_HOME_PATH:-./dev-home/claude}:/home/claude
+      # Sync Mode: 项目根目录实时同步
+      - ..:/workspace/project
+      # Claude 配置持久化
+      - ./workspace/.claude:/workspace/.claude
     working_dir: /workspace/project  # 关键：容器启动后直接进入项目目录
     stdin_open: true  # docker run -i
     tty: true         # docker run -t
@@ -360,7 +374,7 @@ EOF
 create_dockerfile() {
     echo -e "${BLUE}Creating Dockerfile...${NC}"
 
-    local dockerfile="$PROJECT_DIR/Dockerfile"
+    local dockerfile="$PROJECT_DIR/Docker/Dockerfile"
 
     if [ -f "$dockerfile" ]; then
         echo -e "${YELLOW}Dockerfile already exists.${NC}"
@@ -650,6 +664,10 @@ case $SCENARIO in
         # Create directory structure
         create_directory_structure
 
+        # Create Docker directory and workspace directories
+        create_docker_dir
+        create_workspace_dirs
+
         # Create configuration files
         create_env_file
         create_docker_compose
@@ -660,7 +678,7 @@ case $SCENARIO in
 
         echo -e "${GREEN}✓ New project initialized${NC}"
         echo -e "${CYAN}Next steps:${NC}"
-        echo "1. cd $PROJECT_DIR"
+        echo "1. cd $PROJECT_DIR/Docker"
         echo "2. Review .env file and adjust if needed"
         echo "3. Start container: docker-compose up -d"
         echo "4. Enter container: docker-compose exec app sh"
@@ -708,7 +726,10 @@ case $SCENARIO in
 
             # Prepare directory structure
             echo -e "${BLUE}Preparing container environment...${NC}"
-            mkdir -p "$PROJECT_DIR/workspace/project"
+
+            # Create Docker directory and workspace directories
+            create_docker_dir
+            create_workspace_dirs
 
             # Create configuration files first
             create_env_file
@@ -719,7 +740,7 @@ case $SCENARIO in
 
             # Start container for migration
             echo -e "${YELLOW}Starting container for migration...${NC}"
-            cd "$PROJECT_DIR"
+            cd "$PROJECT_DIR/Docker"
             docker-compose up -d
 
             # Wait for container to be fully ready
@@ -751,7 +772,7 @@ case $SCENARIO in
 
             echo -e "${GREEN}✓ Migration complete${NC}"
             echo -e "${CYAN}Next steps:${NC}"
-            echo "1. cd $PROJECT_DIR"
+            echo "1. cd $PROJECT_DIR/Docker"
             echo "2. Review .env file and adjust if needed"
             echo "3. Container is already started, enter with: docker-compose exec app sh"
             echo "4. To backup files from container: bash .claude/skills/docker-claude-code/scripts/backup-project.sh"
@@ -766,9 +787,9 @@ case $SCENARIO in
         echo -e "${BLUE}Starting backup scenario...${NC}"
 
         # 检查是否在项目目录中
-        if [ ! -f "docker-compose.yml" ]; then
+        if [ ! -f "Docker/docker-compose.yml" ]; then
             echo -e "${RED}[!] Not in a valid project directory${NC}"
-            echo -e "${YELLOW}Please run this script from a directory with docker-compose.yml${NC}"
+            echo -e "${YELLOW}Please run this script from a directory with Docker/docker-compose.yml${NC}"
             exit 1
         fi
 

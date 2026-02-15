@@ -12,6 +12,29 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Mode variable
+MODE=""
+
+# Detect Docker mode
+detect_docker_mode() {
+    echo -e "${BLUE}Detecting Docker mode...${NC}"
+
+    if [ -d "Docker" ]; then
+        MODE="Sync"
+        echo -e "${GREEN}✓ Mode: Sync Mode (Docker/ directory detected)${NC}"
+        return 0
+    elif [ -d "workspace" ] && [ -d "dev-home" ]; then
+        MODE="Isolation"
+        echo -e "${YELLOW}⚠ Mode: Isolation Mode (legacy)${NC}"
+        echo -e "${YELLOW}  Consider migrating to Sync Mode for better experience${NC}"
+        return 0
+    else
+        MODE="Unknown"
+        echo -e "${RED}✗ Mode: Unknown or not initialized${NC}"
+        return 1
+    fi
+}
+
 # Dependency Check Function
 check_dependencies() {
     local missing_deps=()
@@ -73,6 +96,10 @@ cd "$PROJECT_DIR" || exit 1
 echo -e "${BLUE}Working Directory:${NC} $PROJECT_DIR"
 echo ""
 
+# Detect Docker mode
+detect_docker_mode
+echo ""
+
 # Decision Tree: Container not working?
 echo -e "${CYAN}Diagnostic Decision Tree:${NC}"
 echo "Container not working?"
@@ -122,6 +149,14 @@ echo ""
 echo -e "${BLUE}Check 2: Container Status${NC}"
 CONTAINER_NAME="docker-claude-code-app"
 
+# Change to Docker directory for Sync Mode
+if [ "$MODE" = "Sync" ]; then
+    cd Docker 2>/dev/null || {
+        echo -e "${RED}✗ Cannot access Docker/ directory${NC}"
+        exit 1
+    }
+fi
+
 if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
     echo -e "${GREEN}[✓]${NC} Container '$CONTAINER_NAME' is running"
     RUNNING=true
@@ -133,6 +168,50 @@ else
     echo -e "${RED}[✗]${NC} Container '$CONTAINER_NAME' does NOT exist"
     echo -e "${YELLOW}Fix:${NC} Run: $DOCKER_COMPOSE up -d"
     RUNNING=false
+fi
+
+# Return to project directory for Sync Mode
+if [ "$MODE" = "Sync" ]; then
+    cd ..
+fi
+echo ""
+
+# Check 2.5: Environment variables file
+echo -e "${BLUE}Check 2.5: Environment Variables File${NC}"
+
+if [ "$MODE" = "Sync" ]; then
+    ENV_FILE="Docker/.env"
+elif [ "$MODE" = "Isolation" ]; then
+    ENV_FILE=".env"
+else
+    ENV_FILE=""
+fi
+
+if [ -n "$ENV_FILE" ] && [ -f "$ENV_FILE" ]; then
+    echo -e "${GREEN}[✓]${NC} .env file exists: $ENV_FILE"
+
+    # Check required environment variables
+    if grep -q "^ANTHROPIC_API_KEY=" "$ENV_FILE"; then
+        echo -e "${GREEN}[✓]${NC} ANTHROPIC_API_KEY configured"
+    else
+        echo -e "${RED}[✗]${NC} ANTHROPIC_API_KEY not found"
+    fi
+
+    if grep -q "^ANTHROPIC_BASE_URL=" "$ENV_FILE"; then
+        echo -e "${GREEN}[✓]${NC} ANTHROPIC_BASE_URL configured"
+    else
+        echo -e "${RED}[✗]${NC} ANTHROPIC_BASE_URL not found"
+    fi
+
+    # Check legacy optional path variables
+    if grep -q "WORKSPACE_PATH\|CLAUDE_CONFIG_PATH\|CLAUDE_HOME_PATH" "$ENV_FILE" 2>/dev/null; then
+        echo -e "${YELLOW}[!]${NC} Legacy path variables found (can be removed in Sync Mode)"
+    fi
+else
+    echo -e "${RED}[✗]${NC} .env file not found"
+    if [ -n "$ENV_FILE" ]; then
+        echo -e "${YELLOW}Expected location:${NC} $ENV_FILE"
+    fi
 fi
 echo ""
 
@@ -216,51 +295,106 @@ if [ "$RUNNING" = true ]; then
     echo ""
     echo -e "${BLUE}Check 5: Volume Mounts${NC}"
 
-    if docker inspect "$CONTAINER_NAME" --format '{{json .Mounts}}' | grep -q "workspace"; then
-        echo -e "${GREEN}[✓]${NC} Workspace volume is mounted"
-    else
-        echo -e "${RED}[✗]${NC} Workspace volume is NOT mounted"
-        echo -e "${YELLOW}Fix:${NC} Check volumes: section in $DOCKER_COMPOSE.yml"
+    # Change to Docker directory for Sync Mode
+    if [ "$MODE" = "Sync" ]; then
+        cd Docker 2>/dev/null || {
+            echo -e "${RED}✗ Cannot access Docker/ directory${NC}"
+            return 1
+        }
+
+        echo -e "${CYAN}Sync Mode volume mounts:${NC}"
+
+        # Start container if not running
+        if [ "$RUNNING" != true ]; then
+            $DOCKER_COMPOSE up -d > /dev/null 2>&1
+            sleep 3
+        fi
+
+        # Check project root directory mount
+        PROJECT_MOUNT=$(docker inspect docker-claude-code-app 2>/dev/null | jq -r '.[0].Mounts[] | select(.Destination=="/workspace/project") | .Source' 2>/dev/null)
+        if [ -n "$PROJECT_MOUNT" ]; then
+            echo -e "${GREEN}[✓]${NC} Project mounted: $PROJECT_MOUNT → /workspace/project"
+        else
+            echo -e "${RED}[✗]${NC} Project mount not found"
+        fi
+
+        # Check Claude config mount
+        CLAUDE_MOUNT=$(docker inspect docker-claude-code-app 2>/dev/null | jq -r '.[0].Mounts[] | select(.Destination=="/workspace/.claude") | .Source' 2>/dev/null)
+        if [ -n "$CLAUDE_MOUNT" ]; then
+            echo -e "${GREEN}[✓]${NC} Claude config mounted: $CLAUDE_MOUNT → /workspace/.claude"
+        else
+            echo -e "${RED}[✗]${NC} Claude config mount not found"
+        fi
+
+        cd ..
+    elif [ "$MODE" = "Isolation" ]; then
+        echo -e "${CYAN}Isolation Mode volume mounts:${NC}"
+        if docker inspect "$CONTAINER_NAME" --format '{{json .Mounts}}' | grep -q "workspace"; then
+            echo -e "${GREEN}[✓]${NC} Workspace volume is mounted"
+        else
+            echo -e "${RED}[✗]${NC} Workspace volume is NOT mounted"
+            echo -e "${YELLOW}Fix:${NC} Check volumes: section in $DOCKER_COMPOSE.yml"
+        fi
     fi
 
     # Check 6: Permission test
     echo ""
     echo -e "${BLUE}Check 6: File Permissions${NC}"
 
-    # Test write permission
-    if $DOCKER_COMPOSE exec -T app sh -c 'touch /workspace/.test_write 2>/dev/null && rm /workspace/.test_write'; then
-        echo -e "${GREEN}[✓]${NC} Write permissions are OK"
-    else
-        echo -e "${RED}[✗]${NC} Write permission DENIED"
-        echo -e "${YELLOW}Diagnosing sudo setup...${NC}"
+    # Change to Docker directory for Sync Mode
+    if [ "$MODE" = "Sync" ]; then
+        cd Docker 2>/dev/null || {
+            echo -e "${RED}✗ Cannot access Docker/ directory${NC}"
+            return 1
+        }
 
-        # Test sudo access
-        if $DOCKER_COMPOSE exec -T app sh -c 'sudo whoami' >/dev/null 2>&1; then
-            echo -e "${GREEN}[✓]${NC} sudo is configured correctly"
-            echo -e "${YELLOW}Fix:${NC}"
-            echo "- Try using sudo for write operations"
-            echo "- Example: $DOCKER_COMPOSE exec app sh -c 'sudo touch /workspace/test'"
-        else
-            echo -e "${RED}[✗]${NC} sudo NOT configured or requires password"
-            echo -e "${YELLOW}Fix:${NC}"
-            echo "- Dockerfile is missing sudo NOPASSWD:ALL configuration"
-            echo "- Rebuild image with corrected Dockerfile:"
-            echo "  1. Add to Dockerfile: RUN apk add --no-cache sudo"
-            echo "  2. Add: echo 'claude ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers"
-            echo "  3. Run: $DOCKER_COMPOSE build && $DOCKER_COMPOSE up -d"
+        # Start container if not running
+        if [ "$RUNNING" != true ]; then
+            $DOCKER_COMPOSE up -d > /dev/null 2>&1
+            sleep 3
         fi
-    fi
 
-    # Test sudo NOPASSWD configuration
-    echo ""
-    echo -e "${BLUE}Check 6.1: Sudo NOPASSWD Configuration${NC}"
+        # Check container user
+        CONTAINER_USER=$($DOCKER_COMPOSE exec -T app sh -c "whoami" 2>/dev/null || echo "unknown")
+        if [ "$CONTAINER_USER" = "claude" ]; then
+            echo -e "${GREEN}[✓]${NC} Container user: claude"
+        else
+            echo -e "${YELLOW}[!]${NC} Container user: $CONTAINER_USER (expected: claude)"
+        fi
 
-    if $DOCKER_COMPOSE exec -T app sh -c 'sudo -n whoami' >/dev/null 2>&1; then
-        echo -e "${GREEN}[✓]${NC} sudo NOPASSWD:ALL is configured correctly"
+        # Check sudo configuration
+        if $DOCKER_COMPOSE exec -T app sh -c "sudo -n whoami" 2>/dev/null | grep -q root; then
+            echo -e "${GREEN}[✓]${NC} sudo NOPASSWD:ALL configured"
+        else
+            echo -e "${RED}[✗]${NC} sudo NOPASSWD:ALL not configured"
+        fi
+
+        cd ..
     else
-        echo -e "${RED}[✗]${NC} sudo requires password or is not configured"
-        echo -e "${YELLOW}Impact:${NC} Non-root user cannot perform autonomous operations"
-        echo -e "${YELLOW}Fix:${NC} Update Dockerfile to include sudo NOPASSWD:ALL"
+        # Isolation Mode - original check
+        # Test write permission
+        if $DOCKER_COMPOSE exec -T app sh -c 'touch /workspace/.test_write 2>/dev/null && rm /workspace/.test_write'; then
+            echo -e "${GREEN}[✓]${NC} Write permissions are OK"
+        else
+            echo -e "${RED}[✗]${NC} Write permission DENIED"
+            echo -e "${YELLOW}Diagnosing sudo setup...${NC}"
+
+            # Test sudo access
+            if $DOCKER_COMPOSE exec -T app sh -c 'sudo whoami' >/dev/null 2>&1; then
+                echo -e "${GREEN}[✓]${NC} sudo is configured correctly"
+                echo -e "${YELLOW}Fix:${NC}"
+                echo "- Try using sudo for write operations"
+                echo "- Example: $DOCKER_COMPOSE exec app sh -c 'sudo touch /workspace/test'"
+            else
+                echo -e "${RED}[✗]${NC} sudo NOT configured or requires password"
+                echo -e "${YELLOW}Fix:${NC}"
+                echo "- Dockerfile is missing sudo NOPASSWD:ALL configuration"
+                echo "- Rebuild image with corrected Dockerfile:"
+                echo "  1. Add to Dockerfile: RUN apk add --no-cache sudo"
+                echo "  2. Add: echo 'claude ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers"
+                echo "  3. Run: $DOCKER_COMPOSE build && $DOCKER_COMPOSE up -d"
+            fi
+        fi
     fi
 
     # Check 7: Claude CLI installation
@@ -304,6 +438,47 @@ if [ "$RUNNING" = true ]; then
     echo ""
 else
     echo -e "${YELLOW}Skipping container checks - container is not running${NC}"
+fi
+
+# Test file synchronization (Sync Mode only)
+if [ "$MODE" = "Sync" ] && [ "$RUNNING" = true ]; then
+    echo ""
+    echo -e "${BLUE}Check 7.5: File Synchronization Test${NC}"
+
+    cd Docker 2>/dev/null || {
+        echo -e "${RED}✗ Cannot access Docker/ directory${NC}"
+    }
+
+    # Test host to container sync
+    echo "sync-test-$(date +%s)" > test-sync.txt 2>/dev/null || {
+        echo -e "${YELLOW}[!]${NC} Cannot create test file in project directory"
+        cd ..
+    }
+
+    sleep 2
+
+    if $DOCKER_COMPOSE exec -T app sh -c "test -f /workspace/project/test-sync.txt" 2>/dev/null; then
+        echo -e "${GREEN}[✓]${NC} Host → Container sync working"
+        rm -f test-sync.txt
+    else
+        echo -e "${RED}[✗]${NC} Host → Container sync failed"
+        rm -f test-sync.txt
+    fi
+
+    # Test container to host sync
+    $DOCKER_COMPOSE exec -T app sh -c "echo 'container-test-$(date +%s)' > /workspace/project/container-test.txt" 2>/dev/null
+    sleep 2
+
+    if [ -f container-test.txt ]; then
+        echo -e "${GREEN}[✓]${NC} Container → Host sync working"
+        rm -f container-test.txt
+    else
+        echo -e "${RED}[✗]${NC} Container → Host sync failed"
+        rm -f container-test.txt 2>/dev/null
+    fi
+
+    cd ..
+    echo ""
 fi
 
 # Check 8: Image build issues (even if container not running)
@@ -452,26 +627,55 @@ echo -e "${GREEN}Diagnostic Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 
+# Mode-specific recommendations
+echo -e "${CYAN}=== Mode-Specific Recommendations ===${NC}"
+
+if [ "$MODE" = "Isolation" ]; then
+    echo -e "${YELLOW}[!]${NC} You are using Isolation Mode (legacy)"
+    echo -e "${BLUE}  → Consider migrating to Sync Mode for better experience${NC}"
+    echo -e "${BLUE}  → Run: bash .claude/skills/docker-claude-code/scripts/migrate-to-sync-mode.sh${NC}"
+fi
+
+if [ "$MODE" = "Sync" ] && [ ! -d "Docker/workspace/.claude" ]; then
+    echo -e "${YELLOW}[!]${NC} Docker/workspace/.claude directory not found"
+    echo -e "${BLUE}  → Run init script: bash .claude/skills/docker-claude-code/scripts/init-docker-project.sh${NC}"
+fi
+
+if [ "$MODE" = "Unknown" ]; then
+    echo -e "${RED}[!]${NC} Docker environment not initialized"
+    echo -e "${BLUE}  → Run: bash .claude/skills/docker-claude-code/scripts/init-docker-project.sh${NC}"
+fi
+
+echo ""
+echo ""
+
 # Common quick fixes
 echo -e "${CYAN}Common Quick Fixes:${NC}"
 echo ""
+
+# Add directory prefix for Sync Mode
+COMPOSE_PREFIX=""
+if [ "$MODE" = "Sync" ]; then
+    COMPOSE_PREFIX="cd Docker && "
+fi
+
 echo "1. ${YELLOW}Restart container:${NC}"
-echo "   $DOCKER_COMPOSE restart"
+echo "   ${COMPOSE_PREFIX}$DOCKER_COMPOSE restart"
 echo ""
 echo "2. ${YELLOW}Rebuild image:${NC}"
-echo "   $DOCKER_COMPOSE build"
-echo "   $DOCKER_COMPOSE up -d"
+echo "   ${COMPOSE_PREFIX}$DOCKER_COMPOSE build"
+echo "   ${COMPOSE_PREFIX}$DOCKER_COMPOSE up -d"
 echo ""
 echo "3. ${YELLOW}View logs:${NC}"
-echo "   $DOCKER_COMPOSE logs -f"
+echo "   ${COMPOSE_PREFIX}$DOCKER_COMPOSE logs -f"
 echo ""
 echo "4. ${YELLOW}Test sudo configuration (non-root user):${NC}"
-echo "   $DOCKER_COMPOSE exec app sh -c 'sudo whoami'"
+echo "   ${COMPOSE_PREFIX}$DOCKER_COMPOSE exec app sh -c 'sudo whoami'"
 echo "   # Should return 'root' without password prompt"
 echo ""
 echo "5. ${YELLOW}Enter container as non-root (PRIMARY):${NC}"
-echo "   $DOCKER_COMPOSE exec app sh"
+echo "   ${COMPOSE_PREFIX}$DOCKER_COMPOSE exec app sh"
 echo ""
 echo "6. ${YELLOW}Enter container as root (EMERGENCY ONLY):${NC}"
-echo "   $DOCKER_COMPOSE exec -u root app sh"
+echo "   ${COMPOSE_PREFIX}$DOCKER_COMPOSE exec -u root app sh"
 echo ""
