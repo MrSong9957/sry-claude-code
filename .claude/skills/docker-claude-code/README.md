@@ -1,202 +1,474 @@
 # docker-claude-code
 
-> 在 Docker 容器中使用 Claude Code CLI 的完整解决方案
+> **用 AI 对话的方式启动 Docker 容器中的 Claude Code CLI**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
 ---
 
-## 🚀 5分钟快速开始
+## ⚠️ 重要说明
+
+**docker-claude-code 仅支持 Claude Code CLI**
+
+本解决方案专为 **Claude Code CLI** 设计，不支持以下 AI IDE 工具：
+- ❌ Cursor
+- ❌ Windsurf
+- ❌ Cline
+- ❌ Roo Code
+- ❌ GitHub Copilot
+
+**为什么选择 Claude Code CLI？**
+- ✅ 官方 Anthropic 支持
+- ✅ 强大的 MCP 扩展生态
+- ✅ 完整的命令行工具集
+- ✅ 活跃的社区和文档
+
+---
+
+## 🚀 零基础 3 分钟上手
 
 ### 前置要求
 
-- Docker Desktop (Windows/macOS) 或 Docker Engine (Linux)
-- 基本的命令行操作经验
+**只需要一件事：安装 Docker Desktop**
 
-### 三步启动
+1. 访问 [docker.com](https://www.docker.com/products/docker-desktop/)
+2. 下载并安装 Docker Desktop
+3. 启动 Docker Desktop（确保鲸鱼图标在托盘区运行）
 
-```bash
-# 1. 初始化项目
-bash .claude/skills/docker-claude-code/scripts/init-docker-project.sh
-# 选择: 1) New Project
-
-# 2. 启动容器
-cd Docker && docker-compose up -d
-
-# 3. 进入容器
-docker-compose exec app sh
-
-# 验证安装
-claude doctor
-```
-
-✅ 完成！你现在在容器中运行 Claude Code CLI 了。
+**就这样！不需要会命令行，不需要懂编程。**
 
 ---
 
-## 📖 使用指南
+### AI 对话式启动（推荐）
 
-### 日常使用
+**你不需要记住任何命令！只需告诉 Claude 帮你启动：**
 
-```bash
-# 进入容器
-cd Docker && docker-compose exec app sh
+#### 启动对话示例
 
-# 在容器中使用 Claude Code
-claude "帮我创建一个 Python Hello World"
+```
+你: 帮我用 docker-claude-code 启动开发环境
 
-# 查看历史
-claude history
+Claude: 好的！我现在为你启动 Docker Claude Code 环境...
 
-# 退出容器
-exit
+[执行一系列初始化命令]
+
+✅ 环境已启动！你现在可以在容器中使用 Claude Code CLI 了。
+
+接下来你想要：
+1. 创建新项目
+2. 在现有项目中工作
+3. 学习使用 Claude Code CLI
 ```
 
-### 停止和重启
+**就这样！Claude 会自动执行所有命令。**
 
-```bash
-# 停止容器
-cd Docker && docker-compose down
+#### 启动后验证
 
-# 重启容器
-cd Docker && docker-compose up -d
 ```
+你: 验证一下安装是否成功
 
-### 文件实时同步
+Claude: 好的！让我检查一下...
 
-**重要**: 项目文件在宿主机和容器之间实时同步
+[运行 claude doctor]
 
-- 在宿主机编辑文件 → 立即在容器内可见
-- 在容器内创建文件 → 立即在宿主机可见
-
-```bash
-# 示例：在宿主机创建文件
-echo "console.log('Hello')" > app.js
-
-# 在容器内立即可以访问
-docker-compose exec app sh -c "cat app.js"
+✅ Claude Code CLI 运行正常！
+✅ Docker 容器连接正常！
+✅ API 配置正常！
 ```
 
 ---
 
-## 🏗️ 架构说明
+## ✨ 状态栏增强插件
 
-### 目录结构
+### 什么是状态栏插件？
 
+**简单说：让你一眼看到 AI 正在做什么**
+
+启动环境后，你的终端状态栏会显示：
 ```
-your-project/
-├── Docker/                    # 容器配置目录
-│   ├── Dockerfile            # 容器镜像定义
-│   ├── docker-compose.yml    # 容器编排配置
-│   ├── .env                  # 环境变量
-│   ├── workspace/
-│   │   └── .claude/          # Claude 配置持久化
-│   └── .claude/
-│       └── skills/
-│           └── docker-claude-code/
-└── [你的项目文件]            # 实时同步到容器
+[最新指令:创建待办事项应用]
 ```
 
-### 核心特性
+**好处：**
+- 不用翻聊天记录，就知道当前任务
+- AI 智能提取核心内容（自动过滤掉规则、要求）
+- 实时更新，每次对话自动刷新
 
-| 特性 | 说明 |
-|------|------|
-| **实时同步** | 项目文件自动在宿主机和容器间同步 |
-| **配置持久化** | Claude 配置保存在 `Docker/workspace/.claude/` |
-| **多用户支持** | 默认 `claude` 用户，必要时可切换 `root` |
-| **状态栏插件** | 自动安装并显示最新指令摘要 |
+---
 
-### 卷挂载配置
+### 自动安装（推荐）
 
-```yaml
-volumes:
-  # 项目根目录实时同步
-  - ..:/workspace/project
-  # Claude 配置持久化
-  - ./workspace/.claude:/workspace/.claude
+**好消息：docker-claude-code 启动时会自动安装！**
+
+```
+你: 帮我启动 docker-claude-code
+
+Claude: 好的！正在启动环境...
+[自动安装状态栏插件]
+✅ 插件已安装！状态栏会显示你的最新指令。
+```
+
+**大多数情况下，你什么都不用做！**
+
+---
+
+### 状态栏没显示怎么办？
+
+**如果你看到的是空状态栏 `[]`，让 AI 帮你修复：**
+
+```
+你: 状态栏没有显示最新指令
+
+Claude: 让我检查一下...
+
+[诊断插件状态]
+
+发现问题：[具体原因]
+正在修复...
+✅ 已修复！重启后状态栏会正常显示。
+```
+
+**或者手动安装（备用方案）：**
+
+```
+你: 帮我手动安装状态栏插件
+
+Claude: 好的！我来执行安装脚本...
+
+[运行安装脚本]
+
+✅ 状态栏插件已安装！
+```
+
+**安装后重启 Claude Code 即可看到效果。**
+
+---
+
+### 常见问题
+
+#### Q: 状态栏显示 `[]` 空的？
+
+**A: 可能的原因：**
+- 还没有新的对话（试说一句话给 AI）
+- 插件未正确安装（让 AI 重新安装）
+- Python 不可用（让 AI 检查环境）
+
+```
+你: 状态栏是空的
+
+Claude: 让我逐项检查...
+1. ✅/❌ 是否有新对话
+2. ✅/❌ 插件是否安装
+3. ✅/❌ Python 是否可用
+
+[自动修复问题]
+```
+
+#### Q: 状态栏不更新？
+
+**A: 重启 Claude Code 通常能解决：**
+```
+你: 状态栏不更新了
+
+Claude: 我来帮你重启...
+
+[重启 Claude Code]
+
+✅ 状态栏已恢复正常！
 ```
 
 ---
 
-## 🔧 故障排除
+## 💼 使用场景
 
-### 容器无法启动
+### 场景一：本地开发项目
 
-```bash
-# 检查端口占用
-netstat -ano | findstr :8080  # Windows
-lsof -i :8080                  # macOS/Linux
+**适用于：** 你有一个正在开发的项目，想在隔离环境中使用 Claude Code CLI
 
-# 查看容器日志
-cd Docker && docker-compose logs app
+#### 使用方式
 
-# 重新构建镜像
-cd Docker && docker-compose build --no-cache
+```
+你: 我在我的 React 项目中，帮我启动 docker-claude-code
+
+Claude: 好的！让我先检查你的项目结构...
+
+[检查并初始化]
+
+✅ 已为你的 React 项目启动 Docker Claude Code 环境！
+
+现在你可以：
+- 使用 claude "帮我添加一个登录页面"
+- 使用 claude "修复这个 bug"
+- 使用 claude "优化这段代码"
 ```
 
-### Claude CLI 无法连接
+**你的项目文件会实时同步到容器中，在宿主机编辑立即生效！**
 
-```bash
-# 验证环境变量
-cd Docker && grep ANTHROPIC .env
+---
 
-# 测试代理连通性
-cd Docker && docker-compose exec app sh -c "curl -v $ANTHROPIC_BASE_URL"
+### 场景二：零基础快速体验
 
-# 检查 CC Switch 是否运行
-# Windows: 在任务管理器中查找 "CC Switch"
-# macOS/Linux: ps aux | grep cc-switch
+**适用于：** 你是编程新手，想要开箱即用地体验 AI 辅助开发
+
+#### 使用方式
+
+```
+你: 我完全不会编程，想试试用 AI 帮我写代码
+
+Claude: 没问题！我先为你创建一个练习项目，然后启动 Docker Claude Code 环境...
+
+[创建示例项目并启动环境]
+
+✅ 环境已就绪！现在让我帮你创建第一个 Python 程序...
+
+[创建 hello.py]
+
+你成功了！你刚刚让 AI 帮你写了第一个程序。
+你可以：
+- 修改代码，让 AI 帮你改进
+- 提问不懂的地方
+- 让 AI 解释每一行代码
 ```
 
-### 文件权限问题
+**无需任何编程基础，AI 会手把手教你！**
 
-```bash
-# 修复文件所有权
-cd Docker && docker-compose exec app sudo chown -R claude:claude /workspace/project
+---
 
-# 或使用 root 用户
-cd Docker && docker-compose exec -u root app sh
+### 场景三：教学与学习
+
+**适用于：** 教师准备教学环境，或学生练习编程
+
+#### 教师使用
+
+```
+你: 我要教 Python 课程，帮我准备 30 个学生的开发环境
+
+Claude: 好的！我来帮你准备标准化的教学环境...
+
+[创建包含课程材料的 Docker 镜像]
+
+✅ 教学环境已准备！
+
+每个学生只需要：
+1. 打开 Claude Code CLI
+2. 说："启动今天的课程环境"
+3. AI 自动加载练习题和示例代码
 ```
 
-### 配置未持久化
+#### 学生使用
 
+```
+你: 帮我加载今天的 Python 练习
+
+Claude: 好的！正在加载第 3 课：循环结构...
+
+[加载练习题和测试用例]
+
+✅ 已加载！今天有 5 个练习题。
+
+开始第一题：编写一个打印 1-100 的程序
+
+提示：你可以让 AI 提示，但尽量自己完成！
+```
+
+**统一环境，公平评价，AI 助教全天候在线！**
+
+---
+
+## 🎯 核心特性（一句话说明）
+
+| 特性 | 给你带来的好处 |
+|------|---------------|
+| **文件实时同步** | 在你的编辑器改代码，容器里马上看见 |
+| **配置自动保存** | 你的设置和 API Key 不会丢失 |
+| **AI 一键启动** | 不用记命令，对话就能启动 |
+| **环境完全隔离** | 不影响你电脑的其他软件 |
+| **零依赖安装** | 只需安装 Docker Desktop |
+
+---
+
+## ❓ 新手常见问题
+
+### Q: 我不懂 Docker，能用这个吗？
+
+**A: 完全可以！**
+
+Docker 就像一个"虚拟房间"：
+- 你的电脑是"房子"
+- Docker 在房子里搭建了一个"开发房间"
+- 你在房间里怎么折腾，不影响房子其他地方
+
+**你只需要：**
+1. 安装 Docker Desktop（像装 QQ 一样简单）
+2. 让 AI 帮你启动
+3. 开始写代码
+
+**Docker 的技术细节 AI 会处理，你不用管！**
+
+---
+
+### Q: 为什么要用容器，不能直接用 Claude Code CLI？
+
+**A: 可以直接用，但容器给你额外的好处：**
+
+| 方式 | 优点 | 缺点 |
+|------|------|------|
+| **直接安装** | 简单快速 | 污染系统环境、依赖冲突、难卸载 |
+| **Docker 容器** | 环境隔离、易于管理、随时删除 | 需要 Docker（但我们帮你搞定了） |
+
+**如果你是：**
+- 新手学习 → 容器更安全，搞坏了随时重来
+- 多项目开发 → 每个项目独立环境，互不影响
+- 团队协作 → 统一环境，减少"我电脑上能跑"问题
+
+---
+
+### Q: Claude Code CLI 是什么？
+
+**A: 它是 Anthropic 官方的 AI 编程助手命令行工具。**
+
+**像这样用：**
 ```bash
-# 检查卷挂载
-cd Docker && docker-compose exec app sh -c "ls -la /workspace/.claude"
+claude "帮我创建一个待办事项应用"
+```
 
-# 重新初始化配置
-cd Docker && bash .claude/skills/docker-claude-code/scripts/init-docker-project.sh
+**然后 AI 会：**
+1. 理解你的需求
+2. 设计项目结构
+3. 编写代码
+4. 运行测试
+5. 解释每一行
+
+**比 Cursor/Copilot 更强的原因：**
+- ✅ 原生集成 Claude 3.5 Sonnet（最强编程模型）
+- ✅ 完整的项目级理解能力
+- ✅ 内置测试和代码审查
+- ✅ 丰富的扩展生态
+
+---
+
+### Q: 容器里的代码怎么保存？
+
+**A: 自动保存，什么都不用做！**
+
+- 在宿主机编辑 → 容器里立即更新
+- 在容器里编辑 → 宿主机立即更新
+- 关闭容器 → 代码文件一直在你的项目目录
+
+**就像编辑普通文件一样简单！**
+
+---
+
+### Q: 如何停止容器？
+
+**A: 告诉 Claude 帮你停止：**
+
+```
+你: 帮我停止 Docker 容器
+
+Claude: 好的！正在停止容器...
+
+[执行停止命令]
+
+✅ 容器已停止！
+```
+
+**或者简单关闭 Docker Desktop 也可以。**
+
+---
+
+### Q: 容器坏了怎么办？
+
+**A: 让 AI 帮你诊断和修复：**
+
+```
+你: 容器好像有问题，帮我诊断一下
+
+Claude: 好的！让我运行诊断工具...
+
+[运行诊断脚本]
+
+发现问题：[描述问题]
+正在修复...
+
+✅ 问题已解决！
+```
+
+**大多数问题都可以通过对话解决！**
+
+---
+
+## 🔧 故障排除（简化版）
+
+### Docker Desktop 无法启动
+
+**症状：** 鲸鱼图标一直在转圈，或者显示红叉
+
+**解决方法：**
+
+1. **重启电脑**（90% 的问题能解决）
+2. **检查虚拟化是否启用**
+   - Windows：在 BIOS 中启用 Intel VT-x 或 AMD-V
+   - Mac：确保没有禁用虚拟化
+3. **重新安装 Docker Desktop**
+
+```
+你: Docker Desktop 启动不了
+
+Claude: 让我帮你诊断...
+
+[提供详细步骤]
+
+按照这些步骤操作，然后告诉我结果。
 ```
 
 ---
 
-## 🛠️ 高级功能
+### 容器启动失败
 
-### 运行诊断
+**症状：** AI 提示容器启动失败
 
-```bash
-cd Docker && bash .claude/skills/docker-claude-code/scripts/diagnose-docker.sh
+**让 AI 自动诊断：**
+
+```
+你: 容器启动失败了
+
+Claude: 好的！让我检查问题...
+
+[运行诊断]
+
+问题原因：[具体原因]
+解决方案：[具体步骤]
 ```
 
-### 验证配置
+**常见原因：**
+- 端口被占用 → AI 会自动更换端口
+- 磁盘空间不足 → AI 会提示清理空间
+- 配置文件错误 → AI 会自动修复
 
-```bash
-cd Docker && bash .claude/skills/docker-claude-code/scripts/validate-config.sh
+---
+
+### API 连接失败
+
+**症状：** Claude Code CLI 无法连接到 Anthropic API
+
+**检查清单：**
+
+```
+你: Claude CLI 无法连接 API
+
+Claude: 让我逐项检查...
+
+1. ✅/❌ API Key 是否配置
+2. ✅/❌ 代理设置是否正确
+3. ✅/❌ 网络连接是否正常
+
+发现问题：[具体问题]
+正在修复...
 ```
 
-### 运行测试
-
-```bash
-cd Docker && bash .claude/skills/docker-claude-code/scripts/test-docker.sh
-```
-
-### 状态栏插件
-
-插件会自动安装，状态栏显示：
-```
-[最新指令:创建 Python Hello World]
-```
+**大多数连接问题 AI 都能自动修复！**
 
 ---
 
@@ -204,59 +476,30 @@ cd Docker && bash .claude/skills/docker-claude-code/scripts/test-docker.sh
 
 ### 相关文档
 
-- **完整文档**: [SKILL.md](./SKILL.md) - 详细的验收标准和 TDD 流程
-- **迁移指南**: [docs/MIGRATION_GUIDE.md](./docs/MIGRATION_GUIDE.md) - 从旧版本迁移
-- **用户文档**: [docs/docker-claude-code.md](../../../docs/docker-claude-code.md)
+- **完整技术文档**: [SKILL.md](./SKILL.md) - 详细的验收标准和 TDD 流程（高级用户）
+- **用户文档**: [docs/docker-claude-code.md](../../../docs/docker-claude-code.md) - 深入使用指南
+- **状态栏插件**: [claude-code-statusline-plugin](../../../claude-code-statusline-plugin/README.md) - 增强你的开发体验
 
-### 常用脚本
+### 旧版本文档
 
-所有脚本位于 `.claude/skills/docker-claude-code/scripts/`：
-
-| 脚本 | 功能 |
-|------|------|
-| `init-docker-project.sh` | 初始化项目（新建/迁移/备份） |
-| `validate-config.sh` | 验证配置文件 |
-| `diagnose-docker.sh` | 诊断问题 |
-| `test-docker.sh` | 运行验收测试 |
-| `backup-project.sh` | 备份容器文件 |
-| `migrate-to-sync-mode.sh` | 迁移到 Sync Mode |
+如果你习惯传统命令行方式，可以查看：[README-OLD.md](./README-OLD.md)
 
 ---
 
-## ❓ 常见问题
+## 🆘 需要帮助？
 
-### Q: 这个 SKILL 和直接安装 Claude Code 有什么区别？
+**最简单的方式：直接问 Claude！**
 
-**A**: docker-claude-code 提供了：
-- 隔离的开发环境
-- 配置持久化
-- 一键初始化
-- 内置状态栏插件
-- 完整的测试和诊断工具
+```
+你: 我遇到 docker-claude-code 的问题，[描述问题]
 
-### Q: 容器内可以使用宿主机的 API Key 吗？
-
-**A**: 可以。通过 `ANTHROPIC_API_KEY=dummy` 配置，容器会使用宿主机的 API Key（通过 CC Switch 代理）。
-
-### Q: 如何在容器中安装其他工具？
-
-**A**: 使用 `sudo` 安装：
-```bash
-cd Docker && docker-compose exec app sh
-sudo apt-get update && sudo apt-get install -y <package>
+Claude: 我来帮你解决...
 ```
 
-### Q: 可以在容器中使用 GPU 吗？
-
-**A**: 需要额外配置。参考 Docker 文档配置 GPU 支持。
-
-### Q: 如何升级 Claude Code CLI？
-
-**A**: 在容器内运行：
-```bash
-cd Docker && docker-compose exec app sh
-npm install -g @anthropic-ai/claude-code
-```
+**或者：**
+- 查看 [常见问题](#-新手常见问题)
+- 运行诊断脚本让 AI 自动排查
+- 提交 Issue 到 GitHub
 
 ---
 
@@ -279,3 +522,5 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 ---
 
 **Made with ❤️ by the Claude Code community**
+
+**让 AI 帮你写代码，从对话开始！**

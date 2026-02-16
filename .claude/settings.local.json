@@ -73,7 +73,9 @@
       "Bash(bash -n \"e:/Files/PycharmProjects/GitHub/sry-claude-code/.claude/skills/docker-claude-code/scripts/init-docker-project.sh\")",
       "Bash(bash -n \"e:/Files/PycharmProjects/GitHub/sry-claude-code/.claude/skills/docker-claude-code/scripts/detect-platform.sh\")",
       "Bash(bash:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(python3:*)",
+      "Bash(git rm:*)"
     ]
   }
 }
