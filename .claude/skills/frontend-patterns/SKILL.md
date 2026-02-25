@@ -1,15 +1,15 @@
 ---
 name: frontend-patterns
-description: Frontend development patterns for React, Next.js, state management, performance optimization, and UI best practices.
+description: React、Next.js、状态管理、性能优化和UI最佳实践的前端开发模式。
 ---
 
-# Frontend Development Patterns
+# 前端开发模式
 
-Modern frontend patterns for React, Next.js, and performant user interfaces.
+适用于 React、Next.js 和高性能用户界面的现代前端模式。
 
-## Component Patterns
+## 组件模式
 
-### Composition Over Inheritance
+### 组合优于继承
 
 ```typescript
 // ✅ GOOD: Component composition
@@ -37,7 +37,7 @@ export function CardBody({ children }: { children: React.ReactNode }) {
 </Card>
 ```
 
-### Compound Components
+### 复合组件
 
 ```typescript
 interface TabsContextValue {
@@ -87,7 +87,7 @@ export function Tab({ id, children }: { id: string, children: React.ReactNode })
 </Tabs>
 ```
 
-### Render Props Pattern
+### 渲染属性模式
 
 ```typescript
 interface DataLoaderProps<T> {
@@ -121,9 +121,9 @@ export function DataLoader<T>({ url, children }: DataLoaderProps<T>) {
 </DataLoader>
 ```
 
-## Custom Hooks Patterns
+## 自定义 Hooks 模式
 
-### State Management Hook
+### 状态管理 Hook
 
 ```typescript
 export function useToggle(initialValue = false): [boolean, () => void] {
@@ -140,7 +140,7 @@ export function useToggle(initialValue = false): [boolean, () => void] {
 const [isOpen, toggleOpen] = useToggle()
 ```
 
-### Async Data Fetching Hook
+### 异步数据获取 Hook
 
 ```typescript
 interface UseQueryOptions<T> {
@@ -195,7 +195,7 @@ const { data: markets, loading, error, refetch } = useQuery(
 )
 ```
 
-### Debounce Hook
+### 防抖 Hook
 
 ```typescript
 export function useDebounce<T>(value: T, delay: number): T {
@@ -223,9 +223,9 @@ useEffect(() => {
 }, [debouncedQuery])
 ```
 
-## State Management Patterns
+## 状态管理模式
 
-### Context + Reducer Pattern
+### Context + Reducer 模式
 
 ```typescript
 interface State {
@@ -278,9 +278,9 @@ export function useMarkets() {
 }
 ```
 
-## Performance Optimization
+## 性能优化
 
-### Memoization
+### 记忆化
 
 ```typescript
 // ✅ useMemo for expensive computations
@@ -304,7 +304,7 @@ export const MarketCard = React.memo<MarketCardProps>(({ market }) => {
 })
 ```
 
-### Code Splitting & Lazy Loading
+### 代码分割与懒加载
 
 ```typescript
 import { lazy, Suspense } from 'react'
@@ -328,7 +328,7 @@ export function Dashboard() {
 }
 ```
 
-### Virtualization for Long Lists
+### 长列表虚拟化
 
 ```typescript
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -372,9 +372,9 @@ export function VirtualMarketList({ markets }: { markets: Market[] }) {
 }
 ```
 
-## Form Handling Patterns
+## 表单处理模式
 
-### Controlled Form with Validation
+### 带验证的受控表单
 
 ```typescript
 interface FormData {
@@ -449,7 +449,7 @@ export function CreateMarketForm() {
 }
 ```
 
-## Error Boundary Pattern
+## 错误边界模式
 
 ```typescript
 interface ErrorBoundaryState {
@@ -497,9 +497,9 @@ export class ErrorBoundary extends React.Component<
 </ErrorBoundary>
 ```
 
-## Animation Patterns
+## 动画模式
 
-### Framer Motion Animations
+### Framer Motion 动画
 
 ```typescript
 import { motion, AnimatePresence } from 'framer-motion'
@@ -551,9 +551,9 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
 }
 ```
 
-## Accessibility Patterns
+## 无障碍模式
 
-### Keyboard Navigation
+### 键盘导航
 
 ```typescript
 export function Dropdown({ options, onSelect }: DropdownProps) {
@@ -594,7 +594,7 @@ export function Dropdown({ options, onSelect }: DropdownProps) {
 }
 ```
 
-### Focus Management
+### 焦点管理
 
 ```typescript
 export function Modal({ isOpen, onClose, children }: ModalProps) {
@@ -628,4 +628,4 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
 }
 ```
 
-**Remember**: Modern frontend patterns enable maintainable, performant user interfaces. Choose patterns that fit your project complexity.
+**记住**：现代前端模式能实现可维护、高性能的用户界面。选择适合你项目复杂度的模式。

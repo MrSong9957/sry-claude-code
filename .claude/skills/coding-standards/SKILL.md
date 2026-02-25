@@ -1,41 +1,45 @@
 ---
 name: coding-standards
-description: Universal coding standards, best practices, and patterns for TypeScript, JavaScript, React, and Node.js development.
+description: 适用于TypeScript、JavaScript、React和Node.js开发的通用编码标准、最佳实践和模式。
 ---
 
-# Coding Standards & Best Practices
+# 编码标准与最佳实践
 
-Universal coding standards applicable across all projects.
+适用于所有项目的通用编码标准。
 
-## Code Quality Principles
+## 代码质量原则
 
-### 1. Readability First
-- Code is read more than written
-- Clear variable and function names
-- Self-documenting code preferred over comments
-- Consistent formatting
+### 1. 可读性优先
 
-### 2. KISS (Keep It Simple, Stupid)
-- Simplest solution that works
-- Avoid over-engineering
-- No premature optimization
-- Easy to understand > clever code
+* 代码被阅读的次数远多于被编写的次数
+* 清晰的变量和函数名
+* 优先选择自文档化代码，而非注释
+* 一致的格式化
 
-### 3. DRY (Don't Repeat Yourself)
-- Extract common logic into functions
-- Create reusable components
-- Share utilities across modules
-- Avoid copy-paste programming
+### 2. KISS (保持简单，傻瓜)
 
-### 4. YAGNI (You Aren't Gonna Need It)
-- Don't build features before they're needed
-- Avoid speculative generality
-- Add complexity only when required
-- Start simple, refactor when needed
+* 采用能工作的最简单方案
+* 避免过度设计
+* 不要过早优化
+* 易于理解 > 聪明的代码
 
-## TypeScript/JavaScript Standards
+### 3. DRY (不要重复自己)
 
-### Variable Naming
+* 将通用逻辑提取到函数中
+* 创建可复用的组件
+* 跨模块共享工具函数
+* 避免复制粘贴式编程
+
+### 4. YAGNI (你不会需要它)
+
+* 不要预先构建不需要的功能
+* 避免推测性泛化
+* 仅在需要时增加复杂性
+* 从简单开始，需要时再重构
+
+## TypeScript/JavaScript 标准
+
+### 变量命名
 
 ```typescript
 // ✅ GOOD: Descriptive names
@@ -49,7 +53,7 @@ const flag = true
 const x = 1000
 ```
 
-### Function Naming
+### 函数命名
 
 ```typescript
 // ✅ GOOD: Verb-noun pattern
@@ -63,7 +67,7 @@ function similarity(a, b) { }
 function email(e) { }
 ```
 
-### Immutability Pattern (CRITICAL)
+### 不可变性模式 (关键)
 
 ```typescript
 // ✅ ALWAYS use spread operator
@@ -79,7 +83,7 @@ user.name = 'New Name'  // BAD
 items.push(newItem)     // BAD
 ```
 
-### Error Handling
+### 错误处理
 
 ```typescript
 // ✅ GOOD: Comprehensive error handling
@@ -105,7 +109,7 @@ async function fetchData(url) {
 }
 ```
 
-### Async/Await Best Practices
+### Async/Await 最佳实践
 
 ```typescript
 // ✅ GOOD: Parallel execution when possible
@@ -121,7 +125,7 @@ const markets = await fetchMarkets()
 const stats = await fetchStats()
 ```
 
-### Type Safety
+### 类型安全
 
 ```typescript
 // ✅ GOOD: Proper types
@@ -142,9 +146,9 @@ function getMarket(id: any): Promise<any> {
 }
 ```
 
-## React Best Practices
+## React 最佳实践
 
-### Component Structure
+### 组件结构
 
 ```typescript
 // ✅ GOOD: Functional component with types
@@ -178,7 +182,7 @@ export function Button(props) {
 }
 ```
 
-### Custom Hooks
+### 自定义 Hooks
 
 ```typescript
 // ✅ GOOD: Reusable custom hook
@@ -200,7 +204,7 @@ export function useDebounce<T>(value: T, delay: number): T {
 const debouncedQuery = useDebounce(searchQuery, 500)
 ```
 
-### State Management
+### 状态管理
 
 ```typescript
 // ✅ GOOD: Proper state updates
@@ -213,7 +217,7 @@ setCount(prev => prev + 1)
 setCount(count + 1)  // Can be stale in async scenarios
 ```
 
-### Conditional Rendering
+### 条件渲染
 
 ```typescript
 // ✅ GOOD: Clear conditional rendering
@@ -225,9 +229,9 @@ setCount(count + 1)  // Can be stale in async scenarios
 {isLoading ? <Spinner /> : error ? <ErrorMessage error={error} /> : data ? <DataDisplay data={data} /> : null}
 ```
 
-## API Design Standards
+## API 设计标准
 
-### REST API Conventions
+### REST API 约定
 
 ```
 GET    /api/markets              # List all markets
@@ -241,7 +245,7 @@ DELETE /api/markets/:id          # Delete market
 GET /api/markets?status=active&limit=10&offset=0
 ```
 
-### Response Format
+### 响应格式
 
 ```typescript
 // ✅ GOOD: Consistent response structure
@@ -270,7 +274,7 @@ return NextResponse.json({
 }, { status: 400 })
 ```
 
-### Input Validation
+### 输入验证
 
 ```typescript
 import { z } from 'zod'
@@ -301,9 +305,9 @@ export async function POST(request: Request) {
 }
 ```
 
-## File Organization
+## 文件组织
 
-### Project Structure
+### 项目结构
 
 ```
 src/
@@ -324,7 +328,7 @@ src/
 └── styles/              # Global styles
 ```
 
-### File Naming
+### 文件命名
 
 ```
 components/Button.tsx          # PascalCase for components
@@ -333,9 +337,9 @@ lib/formatDate.ts             # camelCase for utilities
 types/market.types.ts         # camelCase with .types suffix
 ```
 
-## Comments & Documentation
+## 注释与文档
 
-### When to Comment
+### 何时添加注释
 
 ```typescript
 // ✅ GOOD: Explain WHY, not WHAT
@@ -353,9 +357,9 @@ count++
 name = user.name
 ```
 
-### JSDoc for Public APIs
+### 公共 API 的 JSDoc
 
-```typescript
+````typescript
 /**
  * Searches markets using semantic similarity.
  *
@@ -376,11 +380,11 @@ export async function searchMarkets(
 ): Promise<Market[]> {
   // Implementation
 }
-```
+````
 
-## Performance Best Practices
+## 性能最佳实践
 
-### Memoization
+### 记忆化
 
 ```typescript
 import { useMemo, useCallback } from 'react'
@@ -396,7 +400,7 @@ const handleSearch = useCallback((query: string) => {
 }, [])
 ```
 
-### Lazy Loading
+### 懒加载
 
 ```typescript
 import { lazy, Suspense } from 'react'
@@ -413,7 +417,7 @@ export function Dashboard() {
 }
 ```
 
-### Database Queries
+### 数据库查询
 
 ```typescript
 // ✅ GOOD: Select only needed columns
@@ -428,9 +432,9 @@ const { data } = await supabase
   .select('*')
 ```
 
-## Testing Standards
+## 测试标准
 
-### Test Structure (AAA Pattern)
+### 测试结构 (AAA 模式)
 
 ```typescript
 test('calculates similarity correctly', () => {
@@ -446,7 +450,7 @@ test('calculates similarity correctly', () => {
 })
 ```
 
-### Test Naming
+### 测试命名
 
 ```typescript
 // ✅ GOOD: Descriptive test names
@@ -459,11 +463,12 @@ test('works', () => { })
 test('test search', () => { })
 ```
 
-## Code Smell Detection
+## 代码异味检测
 
-Watch for these anti-patterns:
+警惕以下反模式：
 
-### 1. Long Functions
+### 1. 长函数
+
 ```typescript
 // ❌ BAD: Function > 50 lines
 function processMarketData() {
@@ -478,7 +483,8 @@ function processMarketData() {
 }
 ```
 
-### 2. Deep Nesting
+### 2. 深层嵌套
+
 ```typescript
 // ❌ BAD: 5+ levels of nesting
 if (user) {
@@ -503,7 +509,8 @@ if (!hasPermission) return
 // Do something
 ```
 
-### 3. Magic Numbers
+### 3. 魔法数字
+
 ```typescript
 // ❌ BAD: Unexplained numbers
 if (retryCount > 3) { }
@@ -517,4 +524,4 @@ if (retryCount > MAX_RETRIES) { }
 setTimeout(callback, DEBOUNCE_DELAY_MS)
 ```
 
-**Remember**: Code quality is not negotiable. Clear, maintainable code enables rapid development and confident refactoring.
+**记住**：代码质量不容妥协。清晰、可维护的代码能够实现快速开发和自信的重构。

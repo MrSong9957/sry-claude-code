@@ -1,13 +1,13 @@
 ---
 name: springboot-patterns
-description: Spring Boot architecture patterns, REST API design, layered services, data access, caching, async processing, and logging. Use for Java Spring Boot backend work.
+description: Spring Boot 架构模式、REST API 设计、分层服务、数据访问、缓存、异步处理和日志记录。适用于 Java Spring Boot 后端工作。
 ---
 
-# Spring Boot Development Patterns
+# Spring Boot 开发模式
 
-Spring Boot architecture and API patterns for scalable, production-grade services.
+用于可扩展、生产级服务的 Spring Boot 架构和 API 模式。
 
-## REST API Structure
+## REST API 结构
 
 ```java
 @RestController
@@ -36,7 +36,7 @@ class MarketController {
 }
 ```
 
-## Repository Pattern (Spring Data JPA)
+## 仓库模式 (Spring Data JPA)
 
 ```java
 public interface MarketRepository extends JpaRepository<MarketEntity, Long> {
@@ -45,7 +45,7 @@ public interface MarketRepository extends JpaRepository<MarketEntity, Long> {
 }
 ```
 
-## Service Layer with Transactions
+## 带事务的服务层
 
 ```java
 @Service
@@ -65,7 +65,7 @@ public class MarketService {
 }
 ```
 
-## DTOs and Validation
+## DTO 和验证
 
 ```java
 public record CreateMarketRequest(
@@ -81,7 +81,7 @@ public record MarketResponse(Long id, String name, MarketStatus status) {
 }
 ```
 
-## Exception Handling
+## 异常处理
 
 ```java
 @ControllerAdvice
@@ -108,9 +108,9 @@ class GlobalExceptionHandler {
 }
 ```
 
-## Caching
+## 缓存
 
-Requires `@EnableCaching` on a configuration class.
+需要在配置类上使用 `@EnableCaching`。
 
 ```java
 @Service
@@ -133,9 +133,9 @@ public class MarketCacheService {
 }
 ```
 
-## Async Processing
+## 异步处理
 
-Requires `@EnableAsync` on a configuration class.
+需要在配置类上使用 `@EnableAsync`。
 
 ```java
 @Service
@@ -148,7 +148,7 @@ public class NotificationService {
 }
 ```
 
-## Logging (SLF4J)
+## 日志记录 (SLF4J)
 
 ```java
 @Service
@@ -168,7 +168,7 @@ public class ReportService {
 }
 ```
 
-## Middleware / Filters
+## 中间件 / 过滤器
 
 ```java
 @Component
@@ -190,14 +190,14 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 }
 ```
 
-## Pagination and Sorting
+## 分页和排序
 
 ```java
 PageRequest page = PageRequest.of(pageNumber, pageSize, Sort.by("createdAt").descending());
 Page<Market> results = marketService.list(page);
 ```
 
-## Error-Resilient External Calls
+## 容错的外部调用
 
 ```java
 public <T> T withRetry(Supplier<T> supplier, int maxRetries) {
@@ -221,19 +221,18 @@ public <T> T withRetry(Supplier<T> supplier, int maxRetries) {
 }
 ```
 
-## Rate Limiting (Filter + Bucket4j)
+## 速率限制 (过滤器 + Bucket4j)
 
-**Security Note**: The `X-Forwarded-For` header is untrusted by default because clients can spoof it.
-Only use forwarded headers when:
-1. Your app is behind a trusted reverse proxy (nginx, AWS ALB, etc.)
-2. You have registered `ForwardedHeaderFilter` as a bean
-3. You have configured `server.forward-headers-strategy=NATIVE` or `FRAMEWORK` in application properties
-4. Your proxy is configured to overwrite (not append to) the `X-Forwarded-For` header
+**安全须知**：默认情况下 `X-Forwarded-For` 头是不可信的，因为客户端可以伪造它。
+仅在以下情况下使用转发头：
 
-When `ForwardedHeaderFilter` is properly configured, `request.getRemoteAddr()` will automatically
-return the correct client IP from the forwarded headers. Without this configuration, use
-`request.getRemoteAddr()` directly—it returns the immediate connection IP, which is the only
-trustworthy value.
+1. 您的应用程序位于可信的反向代理（nginx、AWS ALB 等）之后
+2. 您已将 `ForwardedHeaderFilter` 注册为 bean
+3. 您已在应用属性中配置了 `server.forward-headers-strategy=NATIVE` 或 `FRAMEWORK`
+4. 您的代理配置为覆盖（而非追加）`X-Forwarded-For` 头
+
+当 `ForwardedHeaderFilter` 被正确配置时，`request.getRemoteAddr()` 将自动从转发的头中返回正确的客户端 IP。
+没有此配置时，请直接使用 `request.getRemoteAddr()`——它返回的是直接连接的 IP，这是唯一可信的值。
 
 ```java
 @Component
@@ -283,22 +282,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
 }
 ```
 
-## Background Jobs
+## 后台作业
 
-Use Spring’s `@Scheduled` or integrate with queues (e.g., Kafka, SQS, RabbitMQ). Keep handlers idempotent and observable.
+使用 Spring 的 `@Scheduled` 或与队列（如 Kafka、SQS、RabbitMQ）集成。保持处理程序是幂等的和可观察的。
 
-## Observability
+## 可观测性
 
-- Structured logging (JSON) via Logback encoder
-- Metrics: Micrometer + Prometheus/OTel
-- Tracing: Micrometer Tracing with OpenTelemetry or Brave backend
+* 通过 Logback 编码器进行结构化日志记录 (JSON)
+* 指标：Micrometer + Prometheus/OTel
+* 追踪：带有 OpenTelemetry 或 Brave 后端的 Micrometer Tracing
 
-## Production Defaults
+## 生产环境默认设置
 
-- Prefer constructor injection, avoid field injection
-- Enable `spring.mvc.problemdetails.enabled=true` for RFC 7807 errors (Spring Boot 3+)
-- Configure HikariCP pool sizes for workload, set timeouts
-- Use `@Transactional(readOnly = true)` for queries
-- Enforce null-safety via `@NonNull` and `Optional` where appropriate
+* 优先使用构造函数注入，避免字段注入
+* 启用 `spring.mvc.problemdetails.enabled=true` 以获得 RFC 7807 错误 (Spring Boot 3+)
+* 根据工作负载配置 HikariCP 连接池大小，设置超时
+* 对查询使用 `@Transactional(readOnly = true)`
+* 在适当的地方通过 `@NonNull` 和 `Optional` 强制执行空值安全
 
-**Remember**: Keep controllers thin, services focused, repositories simple, and errors handled centrally. Optimize for maintainability and testability.
+**记住**：保持控制器精简、服务专注、仓库简单，并集中处理错误。为可维护性和可测试性进行优化。

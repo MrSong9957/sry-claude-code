@@ -1,27 +1,27 @@
 ---
 name: continuous-learning-v2
-description: Instinct-based learning system that observes sessions via hooks, creates atomic instincts with confidence scoring, and evolves them into skills/commands/agents.
+description: 基于本能的学习系统，通过钩子观察会话，创建具有置信度评分的原子本能，并将其演化为技能/命令/代理。
 version: 2.0.0
 ---
 
-# Continuous Learning v2 - Instinct-Based Architecture
+# 持续学习 v2 - 基于本能的架构
 
-An advanced learning system that turns your Claude Code sessions into reusable knowledge through atomic "instincts" - small learned behaviors with confidence scoring.
+一个高级学习系统，通过原子化的“本能”——带有置信度评分的小型习得行为——将你的 Claude Code 会话转化为可重用的知识。
 
-## What's New in v2
+## v2 的新特性
 
-| Feature | v1 | v2 |
+| 特性 | v1 | v2 |
 |---------|----|----|
-| Observation | Stop hook (session end) | PreToolUse/PostToolUse (100% reliable) |
-| Analysis | Main context | Background agent (Haiku) |
-| Granularity | Full skills | Atomic "instincts" |
-| Confidence | None | 0.3-0.9 weighted |
-| Evolution | Direct to skill | Instincts → cluster → skill/command/agent |
-| Sharing | None | Export/import instincts |
+| 观察 | 停止钩子（会话结束） | 工具使用前/后（100% 可靠） |
+| 分析 | 主上下文 | 后台代理（Haiku） |
+| 粒度 | 完整技能 | 原子化的“本能” |
+| 置信度 | 无 | 0.3-0.9 加权 |
+| 演进 | 直接到技能 | 本能 → 聚类 → 技能/命令/代理 |
+| 共享 | 无 | 导出/导入本能 |
 
-## The Instinct Model
+## 本能模型
 
-An instinct is a small learned behavior:
+一个本能是一个小型习得行为：
 
 ```yaml
 ---
@@ -42,13 +42,14 @@ Use functional patterns over classes when appropriate.
 - User corrected class-based approach to functional on 2025-01-15
 ```
 
-**Properties:**
-- **Atomic** — one trigger, one action
-- **Confidence-weighted** — 0.3 = tentative, 0.9 = near certain
-- **Domain-tagged** — code-style, testing, git, debugging, workflow, etc.
-- **Evidence-backed** — tracks what observations created it
+**属性：**
 
-## How It Works
+* **原子性** — 一个触发条件，一个动作
+* **置信度加权** — 0.3 = 尝试性的，0.9 = 近乎确定
+* **领域标记** — 代码风格、测试、git、调试、工作流等
+* **证据支持** — 追踪是哪些观察创建了它
+
+## 工作原理
 
 ```
 Session Activity
@@ -88,13 +89,13 @@ Session Activity
 └─────────────────────────────────────────┘
 ```
 
-## Quick Start
+## 快速开始
 
-### 1. Enable Observation Hooks
+### 1. 启用观察钩子
 
-Add to your `~/.claude/settings.json`.
+添加到你的 `~/.claude/settings.json` 中。
 
-**If installed as a plugin** (recommended):
+**如果作为插件安装**（推荐）：
 
 ```json
 {
@@ -117,7 +118,7 @@ Add to your `~/.claude/settings.json`.
 }
 ```
 
-**If installed manually** to `~/.claude/skills`:
+**如果手动安装**到 `~/.claude/skills`：
 
 ```json
 {
@@ -140,16 +141,16 @@ Add to your `~/.claude/settings.json`.
 }
 ```
 
-### 2. Initialize Directory Structure
+### 2. 初始化目录结构
 
-The Python CLI will create these automatically, but you can also create them manually:
+Python CLI 会自动创建这些目录，但你也可以手动创建：
 
 ```bash
 mkdir -p ~/.claude/homunculus/{instincts/{personal,inherited},evolved/{agents,skills,commands}}
 touch ~/.claude/homunculus/observations.jsonl
 ```
 
-### 3. Use the Instinct Commands
+### 3. 使用本能命令
 
 ```bash
 /instinct-status     # Show learned instincts with confidence scores
@@ -158,18 +159,18 @@ touch ~/.claude/homunculus/observations.jsonl
 /instinct-import     # Import instincts from others
 ```
 
-## Commands
+## 命令
 
-| Command | Description |
+| 命令 | 描述 |
 |---------|-------------|
-| `/instinct-status` | Show all learned instincts with confidence |
-| `/evolve` | Cluster related instincts into skills/commands |
-| `/instinct-export` | Export instincts for sharing |
-| `/instinct-import <file>` | Import instincts from others |
+| `/instinct-status` | 显示所有已习得的本能及其置信度 |
+| `/evolve` | 将相关本能聚类为技能/命令 |
+| `/instinct-export` | 导出本能用于共享 |
+| `/instinct-import <file>` | 从他人处导入本能 |
 
-## Configuration
+## 配置
 
-Edit `config.json`:
+编辑 `config.json`：
 
 ```json
 {
@@ -205,7 +206,7 @@ Edit `config.json`:
 }
 ```
 
-## File Structure
+## 文件结构
 
 ```
 ~/.claude/homunculus/
@@ -221,64 +222,69 @@ Edit `config.json`:
     └── commands/           # Generated commands
 ```
 
-## Integration with Skill Creator
+## 与技能创建器的集成
 
-When you use the [Skill Creator GitHub App](https://skill-creator.app), it now generates **both**:
-- Traditional SKILL.md files (for backward compatibility)
-- Instinct collections (for v2 learning system)
+当你使用 [技能创建器 GitHub 应用](https://skill-creator.app) 时，它现在会生成**两者**：
 
-Instincts from repo analysis have `source: "repo-analysis"` and include the source repository URL.
+* 传统的 SKILL.md 文件（用于向后兼容）
+* 本能集合（用于 v2 学习系统）
 
-## Confidence Scoring
+来自仓库分析的本能带有 `source: "repo-analysis"` 标记，并包含源仓库 URL。
 
-Confidence evolves over time:
+## 置信度评分
 
-| Score | Meaning | Behavior |
+置信度随时间演变：
+
+| 分数 | 含义 | 行为 |
 |-------|---------|----------|
-| 0.3 | Tentative | Suggested but not enforced |
-| 0.5 | Moderate | Applied when relevant |
-| 0.7 | Strong | Auto-approved for application |
-| 0.9 | Near-certain | Core behavior |
+| 0.3 | 尝试性的 | 建议但不强制执行 |
+| 0.5 | 中等的 | 相关时应用 |
+| 0.7 | 强烈的 | 自动批准应用 |
+| 0.9 | 近乎确定的 | 核心行为 |
 
-**Confidence increases** when:
-- Pattern is repeatedly observed
-- User doesn't correct the suggested behavior
-- Similar instincts from other sources agree
+**置信度增加**当：
 
-**Confidence decreases** when:
-- User explicitly corrects the behavior
-- Pattern isn't observed for extended periods
-- Contradicting evidence appears
+* 模式被反复观察到
+* 用户未纠正建议的行为
+* 来自其他来源的相似本能一致
 
-## Why Hooks vs Skills for Observation?
+**置信度降低**当：
 
-> "v1 relied on skills to observe. Skills are probabilistic—they fire ~50-80% of the time based on Claude's judgment."
+* 用户明确纠正该行为
+* 长时间未观察到该模式
+* 出现矛盾证据
 
-Hooks fire **100% of the time**, deterministically. This means:
-- Every tool call is observed
-- No patterns are missed
-- Learning is comprehensive
+## 为什么用钩子而非技能进行观察？
 
-## Backward Compatibility
+> “v1 依赖技能进行观察。技能是概率性的——它们基于 Claude 的判断，大约有 50-80% 的概率触发。”
 
-v2 is fully compatible with v1:
-- Existing `~/.claude/skills/learned/` skills still work
-- Stop hook still runs (but now also feeds into v2)
-- Gradual migration path: run both in parallel
+钩子**100% 触发**，是确定性的。这意味着：
 
-## Privacy
+* 每次工具调用都被观察到
+* 不会错过任何模式
+* 学习是全面的
 
-- Observations stay **local** on your machine
-- Only **instincts** (patterns) can be exported
-- No actual code or conversation content is shared
-- You control what gets exported
+## 向后兼容性
 
-## Related
+v2 与 v1 完全兼容：
 
-- [Skill Creator](https://skill-creator.app) - Generate instincts from repo history
-- [Homunculus](https://github.com/humanplane/homunculus) - Inspiration for v2 architecture
-- [The Longform Guide](https://x.com/affaanmustafa/status/2014040193557471352) - Continuous learning section
+* 现有的 `~/.claude/skills/learned/` 技能仍然有效
+* 停止钩子仍然运行（但现在也输入到 v2）
+* 渐进式迁移路径：并行运行两者
 
----
+## 隐私
 
-*Instinct-based learning: teaching Claude your patterns, one observation at a time.*
+* 观察数据**保留在**你的本地机器上
+* 只有**本能**（模式）可以被导出
+* 不会共享实际的代码或对话内容
+* 你控制导出的内容
+
+## 相关链接
+
+* [技能创建器](https://skill-creator.app) - 从仓库历史生成本能
+* [Homunculus](https://github.com/humanplane/homunculus) - v2 架构的灵感来源
+* [长文指南](https://x.com/affaanmustafa/status/2014040193557471352) - 持续学习部分
+
+***
+
+*基于本能的学习：一次一个观察，教会 Claude 你的模式。*

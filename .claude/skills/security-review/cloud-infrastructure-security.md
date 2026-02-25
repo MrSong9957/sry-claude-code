@@ -1,27 +1,27 @@
 | name | description |
 |------|-------------|
-| cloud-infrastructure-security | Use this skill when deploying to cloud platforms, configuring infrastructure, managing IAM policies, setting up logging/monitoring, or implementing CI/CD pipelines. Provides cloud security checklist aligned with best practices. |
+| cloud-infrastructure-security | 在部署到云平台、配置基础设施、管理IAM策略、设置日志记录/监控或实现CI/CD流水线时使用此技能。提供符合最佳实践的云安全检查清单。 |
 
-# Cloud & Infrastructure Security Skill
+# 云与基础设施安全技能
 
-This skill ensures cloud infrastructure, CI/CD pipelines, and deployment configurations follow security best practices and comply with industry standards.
+此技能确保云基础设施、CI/CD流水线和部署配置遵循安全最佳实践并符合行业标准。
 
-## When to Activate
+## 何时激活
 
-- Deploying applications to cloud platforms (AWS, Vercel, Railway, Cloudflare)
-- Configuring IAM roles and permissions
-- Setting up CI/CD pipelines
-- Implementing infrastructure as code (Terraform, CloudFormation)
-- Configuring logging and monitoring
-- Managing secrets in cloud environments
-- Setting up CDN and edge security
-- Implementing disaster recovery and backup strategies
+* 将应用程序部署到云平台（AWS、Vercel、Railway、Cloudflare）
+* 配置IAM角色和权限
+* 设置CI/CD流水线
+* 实施基础设施即代码（Terraform、CloudFormation）
+* 配置日志记录和监控
+* 在云环境中管理密钥
+* 设置CDN和边缘安全
+* 实施灾难恢复和备份策略
 
-## Cloud Security Checklist
+## 云安全检查清单
 
-### 1. IAM & Access Control
+### 1. IAM 与访问控制
 
-#### Principle of Least Privilege
+#### 最小权限原则
 
 ```yaml
 # ✅ CORRECT: Minimal permissions
@@ -40,7 +40,7 @@ iam_role:
     - "*"  # All resources
 ```
 
-#### Multi-Factor Authentication (MFA)
+#### 多因素认证 (MFA)
 
 ```bash
 # ALWAYS enable MFA for root/admin accounts
@@ -51,18 +51,18 @@ aws iam enable-mfa-device \
   --authentication-code2 789012
 ```
 
-#### Verification Steps
+#### 验证步骤
 
-- [ ] No root account usage in production
-- [ ] MFA enabled for all privileged accounts
-- [ ] Service accounts use roles, not long-lived credentials
-- [ ] IAM policies follow least privilege
-- [ ] Regular access reviews conducted
-- [ ] Unused credentials rotated or removed
+* \[ ] 生产环境中未使用根账户
+* \[ ] 所有特权账户已启用MFA
+* \[ ] 服务账户使用角色，而非长期凭证
+* \[ ] IAM策略遵循最小权限原则
+* \[ ] 定期进行访问审查
+* \[ ] 未使用的凭证已轮换或移除
 
-### 2. Secrets Management
+### 2. 密钥管理
 
-#### Cloud Secrets Managers
+#### 云密钥管理器
 
 ```typescript
 // ✅ CORRECT: Use cloud secrets manager
@@ -76,7 +76,7 @@ const apiKey = JSON.parse(secret.SecretString).key;
 const apiKey = process.env.API_KEY; // Not rotated, not audited
 ```
 
-#### Secrets Rotation
+#### 密钥轮换
 
 ```bash
 # Set up automatic rotation for database credentials
@@ -86,17 +86,17 @@ aws secretsmanager rotate-secret \
   --rotation-rules AutomaticallyAfterDays=30
 ```
 
-#### Verification Steps
+#### 验证步骤
 
-- [ ] All secrets stored in cloud secrets manager (AWS Secrets Manager, Vercel Secrets)
-- [ ] Automatic rotation enabled for database credentials
-- [ ] API keys rotated at least quarterly
-- [ ] No secrets in code, logs, or error messages
-- [ ] Audit logging enabled for secret access
+* \[ ] 所有密钥存储在云密钥管理器（AWS Secrets Manager、Vercel Secrets）中
+* \[ ] 数据库凭证已启用自动轮换
+* \[ ] API密钥至少每季度轮换一次
+* \[ ] 代码、日志或错误消息中没有密钥
+* \[ ] 密钥访问已启用审计日志记录
 
-### 3. Network Security
+### 3. 网络安全
 
-#### VPC and Firewall Configuration
+#### VPC 和防火墙配置
 
 ```terraform
 # ✅ CORRECT: Restricted security group
@@ -129,17 +129,17 @@ resource "aws_security_group" "bad" {
 }
 ```
 
-#### Verification Steps
+#### 验证步骤
 
-- [ ] Database not publicly accessible
-- [ ] SSH/RDP ports restricted to VPN/bastion only
-- [ ] Security groups follow least privilege
-- [ ] Network ACLs configured
-- [ ] VPC flow logs enabled
+* \[ ] 数据库未公开访问
+* \[ ] SSH/RDP端口仅限VPN/堡垒机访问
+* \[ ] 安全组遵循最小权限原则
+* \[ ] 网络ACL已配置
+* \[ ] VPC流日志已启用
 
-### 4. Logging & Monitoring
+### 4. 日志记录与监控
 
-#### CloudWatch/Logging Configuration
+#### CloudWatch/日志记录配置
 
 ```typescript
 // ✅ CORRECT: Comprehensive logging
@@ -163,18 +163,18 @@ const logSecurityEvent = async (event: SecurityEvent) => {
 };
 ```
 
-#### Verification Steps
+#### 验证步骤
 
-- [ ] CloudWatch/logging enabled for all services
-- [ ] Failed authentication attempts logged
-- [ ] Admin actions audited
-- [ ] Log retention configured (90+ days for compliance)
-- [ ] Alerts configured for suspicious activity
-- [ ] Logs centralized and tamper-proof
+* \[ ] 所有服务已启用CloudWatch/日志记录
+* \[ ] 失败的身份验证尝试已记录
+* \[ ] 管理员操作已审计
+* \[ ] 日志保留期已配置（合规要求90天以上）
+* \[ ] 为可疑活动配置了警报
+* \[ ] 日志已集中存储且防篡改
 
-### 5. CI/CD Pipeline Security
+### 5. CI/CD 流水线安全
 
-#### Secure Pipeline Configuration
+#### 安全流水线配置
 
 ```yaml
 # ✅ CORRECT: Secure GitHub Actions workflow
@@ -209,7 +209,7 @@ jobs:
           aws-region: us-east-1
 ```
 
-#### Supply Chain Security
+#### 供应链安全
 
 ```json
 // package.json - Use lock files and integrity checks
@@ -222,19 +222,19 @@ jobs:
 }
 ```
 
-#### Verification Steps
+#### 验证步骤
 
-- [ ] OIDC used instead of long-lived credentials
-- [ ] Secrets scanning in pipeline
-- [ ] Dependency vulnerability scanning
-- [ ] Container image scanning (if applicable)
-- [ ] Branch protection rules enforced
-- [ ] Code review required before merge
-- [ ] Signed commits enforced
+* \[ ] 使用OIDC而非长期凭证
+* \[ ] 流水线中进行密钥扫描
+* \[ ] 依赖项漏洞扫描
+* \[ ] 容器镜像扫描（如适用）
+* \[ ] 分支保护规则已强制执行
+* \[ ] 合并前需要代码审查
+* \[ ] 已强制执行签名提交
 
-### 6. Cloudflare & CDN Security
+### 6. Cloudflare 与 CDN 安全
 
-#### Cloudflare Security Configuration
+#### Cloudflare 安全配置
 
 ```typescript
 // ✅ CORRECT: Cloudflare Workers with security headers
@@ -257,7 +257,7 @@ export default {
 };
 ```
 
-#### WAF Rules
+#### WAF 规则
 
 ```bash
 # Enable Cloudflare WAF managed rules
@@ -267,18 +267,18 @@ export default {
 # - Bot protection
 ```
 
-#### Verification Steps
+#### 验证步骤
 
-- [ ] WAF enabled with OWASP rules
-- [ ] Rate limiting configured
-- [ ] Bot protection active
-- [ ] DDoS protection enabled
-- [ ] Security headers configured
-- [ ] SSL/TLS strict mode enabled
+* \[ ] WAF已启用并配置OWASP规则
+* \[ ] 已配置速率限制
+* \[ ] 机器人防护已激活
+* \[ ] DDoS防护已启用
+* \[ ] 安全标头已配置
+* \[ ] SSL/TLS严格模式已启用
 
-### 7. Backup & Disaster Recovery
+### 7. 备份与灾难恢复
 
-#### Automated Backups
+#### 自动化备份
 
 ```terraform
 # ✅ CORRECT: Automated RDS backups
@@ -296,35 +296,35 @@ resource "aws_db_instance" "main" {
 }
 ```
 
-#### Verification Steps
+#### 验证步骤
 
-- [ ] Automated daily backups configured
-- [ ] Backup retention meets compliance requirements
-- [ ] Point-in-time recovery enabled
-- [ ] Backup testing performed quarterly
-- [ ] Disaster recovery plan documented
-- [ ] RPO and RTO defined and tested
+* \[ ] 已配置自动化每日备份
+* \[ ] 备份保留期符合合规要求
+* \[ ] 已启用时间点恢复
+* \[ ] 每季度执行备份测试
+* \[ ] 灾难恢复计划已记录
+* \[ ] RPO和RTO已定义并经过测试
 
-## Pre-Deployment Cloud Security Checklist
+## 部署前云安全检查清单
 
-Before ANY production cloud deployment:
+在任何生产云部署之前：
 
-- [ ] **IAM**: Root account not used, MFA enabled, least privilege policies
-- [ ] **Secrets**: All secrets in cloud secrets manager with rotation
-- [ ] **Network**: Security groups restricted, no public databases
-- [ ] **Logging**: CloudWatch/logging enabled with retention
-- [ ] **Monitoring**: Alerts configured for anomalies
-- [ ] **CI/CD**: OIDC auth, secrets scanning, dependency audits
-- [ ] **CDN/WAF**: Cloudflare WAF enabled with OWASP rules
-- [ ] **Encryption**: Data encrypted at rest and in transit
-- [ ] **Backups**: Automated backups with tested recovery
-- [ ] **Compliance**: GDPR/HIPAA requirements met (if applicable)
-- [ ] **Documentation**: Infrastructure documented, runbooks created
-- [ ] **Incident Response**: Security incident plan in place
+* \[ ] **IAM**：未使用根账户，已启用MFA，最小权限策略
+* \[ ] **密钥**：所有密钥都在云密钥管理器中并已配置轮换
+* \[ ] **网络**：安全组受限，无公开数据库
+* \[ ] **日志记录**：已启用CloudWatch/日志记录并配置保留期
+* \[ ] **监控**：为异常情况配置了警报
+* \[ ] **CI/CD**：OIDC身份验证，密钥扫描，依赖项审计
+* \[ ] **CDN/WAF**：Cloudflare WAF已启用并配置OWASP规则
+* \[ ] **加密**：静态和传输中的数据均已加密
+* \[ ] **备份**：自动化备份并已测试恢复
+* \[ ] **合规性**：满足GDPR/HIPAA要求（如适用）
+* \[ ] **文档**：基础设施已记录，已创建操作手册
+* \[ ] **事件响应**：已制定安全事件计划
 
-## Common Cloud Security Misconfigurations
+## 常见云安全配置错误
 
-### S3 Bucket Exposure
+### S3 存储桶暴露
 
 ```bash
 # ❌ WRONG: Public bucket
@@ -335,7 +335,7 @@ aws s3api put-bucket-acl --bucket my-bucket --acl private
 aws s3api put-bucket-policy --bucket my-bucket --policy file://policy.json
 ```
 
-### RDS Public Access
+### RDS 公开访问
 
 ```terraform
 # ❌ WRONG
@@ -350,12 +350,12 @@ resource "aws_db_instance" "good" {
 }
 ```
 
-## Resources
+## 资源
 
-- [AWS Security Best Practices](https://aws.amazon.com/security/best-practices/)
-- [CIS AWS Foundations Benchmark](https://www.cisecurity.org/benchmark/amazon_web_services)
-- [Cloudflare Security Documentation](https://developers.cloudflare.com/security/)
-- [OWASP Cloud Security](https://owasp.org/www-project-cloud-security/)
-- [Terraform Security Best Practices](https://www.terraform.io/docs/cloud/guides/recommended-practices/)
+* [AWS 安全最佳实践](https://aws.amazon.com/security/best-practices/)
+* [CIS AWS 基础基准](https://www.cisecurity.org/benchmark/amazon_web_services)
+* [Cloudflare 安全文档](https://developers.cloudflare.com/security/)
+* [OWASP 云安全](https://owasp.org/www-project-cloud-security/)
+* [Terraform 安全最佳实践](https://www.terraform.io/docs/cloud/guides/recommended-practices/)
 
-**Remember**: Cloud misconfigurations are the leading cause of data breaches. A single exposed S3 bucket or overly permissive IAM policy can compromise your entire infrastructure. Always follow the principle of least privilege and defense in depth.
+**请记住**：云配置错误是数据泄露的主要原因。一个暴露的S3存储桶或一个权限过大的IAM策略就可能危及整个基础设施。始终遵循最小权限原则和深度防御策略。

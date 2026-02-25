@@ -1,27 +1,29 @@
 ---
 name: iterative-retrieval
-description: Pattern for progressively refining context retrieval to solve the subagent context problem
+description: 用于逐步优化上下文检索以解决子代理上下文问题的模式
 ---
 
-# Iterative Retrieval Pattern
+# 迭代检索模式
 
-Solves the "context problem" in multi-agent workflows where subagents don't know what context they need until they start working.
+解决多智能体工作流中的“上下文问题”，即子智能体在开始工作前不知道需要哪些上下文。
 
-## The Problem
+## 问题
 
-Subagents are spawned with limited context. They don't know:
-- Which files contain relevant code
-- What patterns exist in the codebase
-- What terminology the project uses
+子智能体被生成时上下文有限。它们不知道：
 
-Standard approaches fail:
-- **Send everything**: Exceeds context limits
-- **Send nothing**: Agent lacks critical information
-- **Guess what's needed**: Often wrong
+* 哪些文件包含相关代码
+* 代码库中存在哪些模式
+* 项目使用什么术语
 
-## The Solution: Iterative Retrieval
+标准方法会失败：
 
-A 4-phase loop that progressively refines context:
+* **发送所有内容**：超出上下文限制
+* **不发送任何内容**：智能体缺乏关键信息
+* **猜测所需内容**：经常出错
+
+## 解决方案：迭代检索
+
+一个逐步优化上下文的 4 阶段循环：
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -39,9 +41,9 @@ A 4-phase loop that progressively refines context:
 └─────────────────────────────────────────────┘
 ```
 
-### Phase 1: DISPATCH
+### 阶段 1：调度
 
-Initial broad query to gather candidate files:
+初始的广泛查询以收集候选文件：
 
 ```javascript
 // Start with high-level intent
@@ -55,9 +57,9 @@ const initialQuery = {
 const candidates = await retrieveFiles(initialQuery);
 ```
 
-### Phase 2: EVALUATE
+### 阶段 2：评估
 
-Assess retrieved content for relevance:
+评估检索到的内容的相关性：
 
 ```javascript
 function evaluateRelevance(files, task) {
@@ -70,15 +72,16 @@ function evaluateRelevance(files, task) {
 }
 ```
 
-Scoring criteria:
-- **High (0.8-1.0)**: Directly implements target functionality
-- **Medium (0.5-0.7)**: Contains related patterns or types
-- **Low (0.2-0.4)**: Tangentially related
-- **None (0-0.2)**: Not relevant, exclude
+评分标准：
 
-### Phase 3: REFINE
+* **高 (0.8-1.0)**：直接实现目标功能
+* **中 (0.5-0.7)**：包含相关模式或类型
+* **低 (0.2-0.4)**：略微相关
+* **无 (0-0.2)**：不相关，排除
 
-Update search criteria based on evaluation:
+### 阶段 3：优化
+
+根据评估结果更新搜索条件：
 
 ```javascript
 function refineQuery(evaluation, previousQuery) {
@@ -103,9 +106,9 @@ function refineQuery(evaluation, previousQuery) {
 }
 ```
 
-### Phase 4: LOOP
+### 阶段 4：循环
 
-Repeat with refined criteria (max 3 cycles):
+使用优化后的条件重复（最多 3 个周期）：
 
 ```javascript
 async function iterativeRetrieve(task, maxCycles = 3) {
@@ -131,9 +134,9 @@ async function iterativeRetrieve(task, maxCycles = 3) {
 }
 ```
 
-## Practical Examples
+## 实际示例
 
-### Example 1: Bug Fix Context
+### 示例 1：错误修复上下文
 
 ```
 Task: "Fix the authentication token expiry bug"
@@ -151,7 +154,7 @@ Cycle 2:
 Result: auth.ts, tokens.ts, session-manager.ts, jwt-utils.ts
 ```
 
-### Example 2: Feature Implementation
+### 示例 2：功能实现
 
 ```
 Task: "Add rate limiting to API endpoints"
@@ -174,29 +177,30 @@ Cycle 3:
 Result: throttle.ts, middleware/index.ts, router-setup.ts
 ```
 
-## Integration with Agents
+## 与智能体集成
 
-Use in agent prompts:
+在智能体提示中使用：
 
 ```markdown
-When retrieving context for this task:
-1. Start with broad keyword search
-2. Evaluate each file's relevance (0-1 scale)
-3. Identify what context is still missing
-4. Refine search criteria and repeat (max 3 cycles)
-5. Return files with relevance >= 0.7
+在为该任务检索上下文时：
+1. 从广泛的关键词搜索开始
+2. 评估每个文件的相关性（0-1 分制）
+3. 识别仍缺失哪些上下文
+4. 优化搜索条件并重复（最多 3 个循环）
+5. 返回相关性 >= 0.7 的文件
+
 ```
 
-## Best Practices
+## 最佳实践
 
-1. **Start broad, narrow progressively** - Don't over-specify initial queries
-2. **Learn codebase terminology** - First cycle often reveals naming conventions
-3. **Track what's missing** - Explicit gap identification drives refinement
-4. **Stop at "good enough"** - 3 high-relevance files beats 10 mediocre ones
-5. **Exclude confidently** - Low-relevance files won't become relevant
+1. **先宽泛，后逐步细化** - 不要过度指定初始查询
+2. **学习代码库术语** - 第一轮循环通常能揭示命名约定
+3. **跟踪缺失内容** - 明确识别差距以驱动优化
+4. **在“足够好”时停止** - 3 个高相关性文件胜过 10 个中等相关性文件
+5. **自信地排除** - 低相关性文件不会变得相关
 
-## Related
+## 相关
 
-- [The Longform Guide](https://x.com/affaanmustafa/status/2014040193557471352) - Subagent orchestration section
-- `continuous-learning` skill - For patterns that improve over time
-- Agent definitions in `~/.claude/agents/`
+* [长篇指南](https://x.com/affaanmustafa/status/2014040193557471352) - 子智能体编排部分
+* `continuous-learning` 技能 - 用于随时间改进的模式
+* 在 `~/.claude/agents/` 中的智能体定义

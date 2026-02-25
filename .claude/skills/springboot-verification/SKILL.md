@@ -3,11 +3,11 @@ name: springboot-verification
 description: Verification loop for Spring Boot projects: build, static analysis, tests with coverage, security scans, and diff review before release or PR.
 ---
 
-# Spring Boot Verification Loop
+# Spring Boot 验证循环
 
-Run before PRs, after major changes, and pre-deploy.
+在提交 PR 前、重大变更后以及部署前运行。
 
-## Phase 1: Build
+## 阶段 1：构建
 
 ```bash
 mvn -T 4 clean verify -DskipTests
@@ -15,21 +15,23 @@ mvn -T 4 clean verify -DskipTests
 ./gradlew clean assemble -x test
 ```
 
-If build fails, stop and fix.
+如果构建失败，停止并修复。
 
-## Phase 2: Static Analysis
+## 阶段 2：静态分析
 
-Maven (common plugins):
+Maven（常用插件）：
+
 ```bash
 mvn -T 4 spotbugs:check pmd:check checkstyle:check
 ```
 
-Gradle (if configured):
+Gradle（如果已配置）：
+
 ```bash
 ./gradlew checkstyleMain pmdMain spotbugsMain
 ```
 
-## Phase 3: Tests + Coverage
+## 阶段 3：测试 + 覆盖率
 
 ```bash
 mvn -T 4 test
@@ -38,11 +40,12 @@ mvn jacoco:report   # verify 80%+ coverage
 ./gradlew test jacocoTestReport
 ```
 
-Report:
-- Total tests, passed/failed
-- Coverage % (lines/branches)
+报告：
 
-## Phase 4: Security Scan
+* 总测试数，通过/失败
+* 覆盖率百分比（行/分支）
+
+## 阶段 4：安全扫描
 
 ```bash
 # Dependency CVEs
@@ -54,27 +57,28 @@ mvn org.owasp:dependency-check-maven:check
 git secrets --scan  # if configured
 ```
 
-## Phase 5: Lint/Format (optional gate)
+## 阶段 5：代码检查/格式化（可选关卡）
 
 ```bash
 mvn spotless:apply   # if using Spotless plugin
 ./gradlew spotlessApply
 ```
 
-## Phase 6: Diff Review
+## 阶段 6：差异审查
 
 ```bash
 git diff --stat
 git diff
 ```
 
-Checklist:
-- No debugging logs left (`System.out`, `log.debug` without guards)
-- Meaningful errors and HTTP statuses
-- Transactions and validation present where needed
-- Config changes documented
+检查清单：
 
-## Output Template
+* 没有遗留调试日志（`System.out`、`log.debug` 没有防护）
+* 有意义的错误信息和 HTTP 状态码
+* 在需要的地方有事务和验证
+* 配置变更已记录
+
+## 输出模板
 
 ```
 VERIFICATION REPORT
@@ -92,9 +96,9 @@ Issues to Fix:
 2. ...
 ```
 
-## Continuous Mode
+## 持续模式
 
-- Re-run phases on significant changes or every 30–60 minutes in long sessions
-- Keep a short loop: `mvn -T 4 test` + spotbugs for quick feedback
+* 在重大变更时或长时间会话中每 30–60 分钟重新运行各阶段
+* 保持短循环：`mvn -T 4 test` + spotbugs 以获取快速反馈
 
-**Remember**: Fast feedback beats late surprises. Keep the gate strict—treat warnings as defects in production systems.
+**记住**：快速反馈胜过意外惊喜。保持关卡严格——将警告视为生产系统中的缺陷。
